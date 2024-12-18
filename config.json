@@ -1,0 +1,4 @@
+{
+  "activations_path": "/home/anya/code/baskerville_sae/src/baskerville/scripts/v2_activations/conv1d_1/activations_*.h5",
+  "global_max_save_path": "/home/anya/code/baskerville_sae/src/baskerville/scripts/v2_activations/conv1d_1_max.npy"
+}
