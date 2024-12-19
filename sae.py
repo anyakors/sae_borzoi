@@ -145,8 +145,10 @@ class SparseAutoencoder(nn.Module):
 
     def forward(self, x):
 
-        # reshape to (batch_size * length, channels)
+        # record the shape of the input
+        input_shape = x.shape
 
+        # reshape to (batch_size * length, channels)
         x = x.view(-1, x.size(-1))
 
         # Encode
@@ -162,7 +164,7 @@ class SparseAutoencoder(nn.Module):
         metrics = self.get_metrics(h_sparse)
 
         # Reshape back to (batch_size, length, channels)
-        x_recon = x_recon.view(x.size(0), x.size(1), -1)
+        x_recon = x_recon.view(*input_shape)
 
         return x_recon, h_sparse, metrics
 
