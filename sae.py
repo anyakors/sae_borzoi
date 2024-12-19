@@ -10,8 +10,65 @@ import matplotlib.pyplot as plt
 import io
 from torchvision.transforms import ToTensor
 from dataset import *
+import json
+import os
 
 
+class ModelCheckpoint:
+    def __init__(self, save_dir, metric_name='val_total_loss'):
+        """
+        Handle model checkpointing.
+        
+        Args:
+            save_dir (str): Directory to save checkpoints
+            metric_name (str): Name of metric to monitor for best model
+        """
+        self.save_dir = Path(save_dir)
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+        self.metric_name = metric_name
+        self.best_metric = float('inf')
+        
+    def save_checkpoint(self, model, optimizer, epoch, metrics, is_best=False):
+        """Save model checkpoint and training state"""
+        checkpoint = {
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'metrics': metrics,
+        }
+        
+        # Save latest checkpoint
+        latest_path = self.save_dir / 'latest_checkpoint.pt'
+        torch.save(checkpoint, latest_path)
+        
+        # Save best model if this is the best so far
+        if is_best:
+            best_path = self.save_dir / 'best_model.pt'
+            torch.save(checkpoint, best_path)
+            
+            # Save metrics as JSON for easy reading
+            metrics_path = self.save_dir / 'best_model_metrics.json'
+            with open(metrics_path, 'w') as f:
+                json.dump(metrics, f, indent=4)
+    
+    def is_best(self, metric_value):
+        """Check if current metric is the best so far"""
+        if metric_value < self.best_metric:
+            self.best_metric = metric_value
+            return True
+        return False
+    
+    @staticmethod
+    def load_checkpoint(checkpoint_path, model, optimizer=None):
+        """Load model and training state from checkpoint"""
+        checkpoint = torch.load(checkpoint_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        
+        if optimizer is not None:
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            
+        return checkpoint['epoch'], checkpoint['metrics']
+    
 class SparseAutoencoder(nn.Module):
     def __init__(self, input_dim, hidden_dim, k, sparsity_method='topk'):
         """
@@ -144,7 +201,10 @@ def train_sparse_autoencoder(
     sparsity_factor: float = 10.0,
     patience: int = 7,
     num_workers: int = 4,
-    sparsity_method: str = 'topk'
+    sparsity_method: str = 'topk',
+    global_max: float = None,
+    checkpoint_dir: str = 'checkpoints',
+    resume_training: bool = False
 ):
     """
     Train a sparse autoencoder.
@@ -166,9 +226,9 @@ def train_sparse_autoencoder(
     train_pattern = str(Path(train_dir) / "activations_*.h5")
     val_pattern = str(Path(val_dir) / "activations_*.h5")
     
-    train_dataset = ActivationDataset(train_pattern)
-    val_dataset = ActivationDataset(val_pattern)
-    
+    train_dataset = ActivationDataset(train_pattern, transform=NormalizeActivations(global_max=global_max))
+    val_dataset = ActivationDataset(val_pattern, transform=NormalizeActivations(global_max=global_max))
+
     train_loader = DataLoader(
         train_dataset, 
         batch_size=batch_size,
@@ -189,14 +249,27 @@ def train_sparse_autoencoder(
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     mse_loss = nn.MSELoss()
     
+    # Set up checkpointing
+    checkpoint_handler = ModelCheckpoint(checkpoint_dir)
+    start_epoch = 0
+
+    # Resume from checkpoint if requested
+    if resume_training:
+        latest_checkpoint = Path(checkpoint_dir) / 'latest_checkpoint.pt'
+        if latest_checkpoint.exists():
+            start_epoch, metrics = ModelCheckpoint.load_checkpoint(
+                latest_checkpoint, model, optimizer
+            )
+            print(f"Resuming training from epoch {start_epoch + 1}")
+    
     # Set up tensorboard
-    writer = SummaryWriter()
+    writer = SummaryWriter(log_dir=checkpoint_dir)
     
     # Initialize early stopping
     early_stopping = EarlyStopping(patience=patience)
     
     # Training loop
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         model.train()
         epoch_metrics = {
             'train_mse': 0,
@@ -256,9 +329,11 @@ def train_sparse_autoencoder(
         
         # Validation
         model.eval()
-        val_mse = 0
-        val_l1 = 0
-        val_total = 0
+        val_metrics = {
+            'val_mse': 0,
+            'val_l1': 0,
+            'val_total': 0
+        }
         
         with torch.no_grad():
             for batch in val_loader:
@@ -269,23 +344,38 @@ def train_sparse_autoencoder(
                 l1 = hidden.abs().mean()
                 total_loss = mse + sparsity_factor * l1
                 
-                val_mse += mse.item()
-                val_l1 += l1.item()
-                val_total += total_loss.item()
+                val_metrics['val_mse'] += mse.item()
+                val_metrics['val_l1'] += l1.item()
+                val_metrics['val_total'] += total_loss.item()
         
-        # Calculate average validation metrics
-        val_mse /= len(val_loader)
-        val_l1 /= len(val_loader)
-        val_total /= len(val_loader)
+        # Average validation metrics
+        for key in val_metrics:
+            val_metrics[key] /= len(val_loader)
         
-        writer.add_scalar('Metrics/val_mse', val_mse, epoch)
-        writer.add_scalar('Metrics/val_l1', val_l1, epoch)
-        writer.add_scalar('Metrics/val_total', val_total, epoch)
+        # Combine all metrics
+        all_metrics = {**epoch_metrics, **val_metrics}
+        
+        # Log metrics to tensorboard
+        for key, value in all_metrics.items():
+            writer.add_scalar(f'Metrics/{key}', value, epoch)
+        
+        # Check if this is the best model
+        is_best = checkpoint_handler.is_best(val_metrics['val_total'])
+        
+        # Save checkpoint
+        checkpoint_handler.save_checkpoint(
+            model, 
+            optimizer, 
+            epoch,
+            all_metrics,
+            is_best=is_best
+        )
         
         # Early stopping check
-        early_stopping(val_total)
+        early_stopping(val_metrics['val_total'])
         if early_stopping.early_stop:
             print(f"Early stopping triggered after {epoch + 1} epochs")
             break
+    
 
     return model

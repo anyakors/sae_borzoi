@@ -3,21 +3,32 @@ import torch
 import torch.nn as nn
 from sae import *
 from dataset import *
+import json
+import numpy as np
+
+
+config_file = "config.json"
+with open(config_file) as config_open:
+    configs = json.load(config_open)
 
 # Example usage
-input_dim = 768  # Your activation dimension
-hidden_dim = 1024  # Desired hidden layer dimension
-k = 128  # Number of top activations to keep
+input_dim = configs["input_channels"]  # Your activation dimension
+hidden_dim = configs["expansion_factor"]*configs["input_channels"]  # Desired hidden layer dimension
+k = int(configs["topk_pct"]*configs["input_channels"]) # Number of top activations to keep
+
+if not os.path.exists(configs["model_save_path"]):
+    os.makedirs(configs["model_save_path"])
 
 model = train_sparse_autoencoder(
-    train_dir="path/to/train/activations",
-    val_dir="path/to/val/activations",
+    train_dir=configs["activations_path"],
+    val_dir=configs["activations_path_val"],
     input_dim=input_dim,
     hidden_dim=hidden_dim,
     k=k,
-    batch_size=32,
+    batch_size=2,
     num_epochs=100,
     learning_rate=1e-3,
     sparsity_factor=10.0,
-    patience=7
+    patience=7,
+    checkpoint_dir=configs["model_save_path"],
 )

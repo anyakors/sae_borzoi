@@ -103,7 +103,6 @@ class NormalizeActivations:
     def __call__(self, x):
         """
         Normalize activation values.
-        If global_max is provided, can scale values to [0, 1] range.
         """
         if self.global_max is not None:
             return x / self.global_max
