@@ -182,7 +182,7 @@ class EarlyStopping:
 def plot_activation_histogram(activations):
     """Create histogram of activation values"""
     plt.figure(figsize=(10, 6))
-    plt.hist(activations.detach().numpy().flatten(), bins=50)
+    plt.hist(activations.cpu().detach().numpy().flatten(), bins=50)
     plt.title("Distribution of Activation Values")
     plt.xlabel("Activation Value")
     plt.ylabel("Count")
