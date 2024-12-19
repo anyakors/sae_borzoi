@@ -182,7 +182,7 @@ class EarlyStopping:
 def plot_activation_histogram(activations):
     """Create histogram of activation values"""
     plt.figure(figsize=(10, 6))
-    plt.hist(activations.cpu().numpy().flatten(), bins=50)
+    plt.hist(activations.detach().numpy().flatten(), bins=50)
     plt.title("Distribution of Activation Values")
     plt.xlabel("Activation Value")
     plt.ylabel("Count")
@@ -289,7 +289,7 @@ def train_sparse_autoencoder(
 
         # Training
         pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")
-        for batch in pbar:
+        for ib, batch in enumerate(pbar):
             batch = batch.to(device)
 
             # Forward pass
@@ -313,26 +313,35 @@ def train_sparse_autoencoder(
             for key, value in batch_metrics.items():
                 epoch_metrics[f"train_{key}"] += value
 
-            pbar.set_postfix(
-                {
-                    "MSE": mse.item(),
-                    "L1": l1.item(),
-                    "Sparsity": batch_metrics["sparsity_ratio"],
-                }
-            )
+            if ib % 10 == 0:
+                # Log metrics to tensorboard
+                for key, value in epoch_metrics.items():
+                    writer.add_scalar(f"Metrics/{key}", value/(ib+1), ib + epoch*len(train_loader))
+
+                    pbar.set_postfix(
+                        {
+                            "MSE": mse.item(),
+                            "L1": l1.item(),
+                            "Sparsity": batch_metrics["sparsity_ratio"],
+                        }
+                    )
+
+            if ib % 100 == 0:
+                activation_hist = plot_activation_histogram(hidden)
+                writer.add_image("Activation_Distribution", activation_hist, epoch)
 
         # Average metrics
         for key in epoch_metrics:
             epoch_metrics[key] /= len(train_loader)
 
         # Log metrics to tensorboard
-        for key, value in epoch_metrics.items():
-            writer.add_scalar(f"Metrics/{key}", value, epoch)
+        #for key, value in epoch_metrics.items():
+        #    writer.add_scalar(f"Metrics/{key}", value, epoch)
 
         # Log activation distribution plot
-        if epoch % 5 == 0:  # Log every 5 epochs
-            activation_hist = plot_activation_histogram(hidden)
-            writer.add_image("Activation_Distribution", activation_hist, epoch)
+        #if epoch % 2 == 0:  # Log every 5 epochs
+            #activation_hist = plot_activation_histogram(hidden)
+            #writer.add_image("Activation_Distribution", activation_hist, epoch)
 
         # Validation
         model.eval()

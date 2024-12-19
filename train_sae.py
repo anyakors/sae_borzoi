@@ -16,6 +16,13 @@ input_dim = configs["input_channels"]  # Your activation dimension
 hidden_dim = configs["expansion_factor"]*configs["input_channels"]  # Desired hidden layer dimension
 k = int(configs["topk_pct"]*configs["input_channels"]) # Number of top activations to keep
 
+#load global max if it exists
+if os.path.exists(configs["global_max_save_path"]):
+    global_max = np.load(configs["global_max_save_path"])
+    print("Using global max from file:", global_max)
+else:
+    global_max = None
+
 if not os.path.exists(configs["model_save_path"]):
     os.makedirs(configs["model_save_path"])
 
@@ -31,4 +38,5 @@ model = train_sparse_autoencoder(
     sparsity_factor=10.0,
     patience=7,
     checkpoint_dir=configs["model_save_path"],
+    global_max=global_max
 )
