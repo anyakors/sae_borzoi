@@ -404,11 +404,13 @@ def train_sparse_autoencoder(
                         }
                     )
 
-            if ib % 100 == 0:
-                activation_hist = plot_activation_histogram(hidden)
-                writer.add_image("Activation_Distribution", activation_hist, epoch)
+            if ib % 100 == 0 and ib!=0:
 
-                loss_metrics = analyze_loss_scales(model, val_loader, initial_sparsity_factor, device)
+                activation_hist = plot_activation_histogram(hidden)
+                writer.add_image("Activation_Distribution", activation_hist, ib + epoch*len(train_loader))
+
+                torch.cuda.empty_cache()
+                loss_metrics = analyze_loss_scales(model, val_loader, sparsity_factor, device)
                 print(f"Loss Analysis:")
                 print(f"MSE Scale: {loss_metrics['avg_mse']:.6f}")
                 print(f"L1 Scale (weighted): {loss_metrics['weighted_l1']:.6f}")
