@@ -169,6 +169,68 @@ class SparseAutoencoder(nn.Module):
         return x_recon, h_sparse, metrics
 
 
+def analyze_loss_scales(model, dataloader, current_sparsity_factor, device):
+    """
+    Analyze the scales of MSE and L1 losses to help tune sparsity_factor.
+    Returns suggested sparsity_factor adjustment.
+    """
+    model.eval()
+    mse_loss_fn = nn.MSELoss()
+    total_mse = 0
+    total_l1 = 0
+    num_batches = 0
+    
+    with torch.no_grad():
+        for batch in dataloader:
+            batch = batch.to(device)
+            recon, hidden, _ = model(batch)
+            
+            mse = mse_loss_fn(recon, batch)
+            l1 = hidden.abs().mean()
+            
+            total_mse += mse.item()
+            total_l1 += l1.item()
+            num_batches += 1
+    
+    avg_mse = total_mse / num_batches
+    avg_l1 = total_l1 / num_batches
+    
+    # Calculate ratio between losses
+    loss_ratio = avg_mse / (current_sparsity_factor * avg_l1)
+    
+    metrics = {
+        'avg_mse': avg_mse,
+        'avg_l1': avg_l1,
+        'weighted_l1': current_sparsity_factor * avg_l1,
+        'loss_ratio': loss_ratio
+    }
+    
+    return metrics
+
+def suggest_sparsity_factor(metrics, target_sparsity=0.05):
+    """
+    Suggest sparsity factor adjustment based on current metrics.
+    target_sparsity: desired fraction of non-zero activations
+    """
+    current_ratio = metrics['loss_ratio']
+    current_sparsity = 1 - metrics['sparsity_ratio']  # Convert zero ratio to activation ratio
+    
+    if current_sparsity > target_sparsity * 1.2:  # Too many active neurons
+        adjustment_factor = 1.5
+    elif current_sparsity < target_sparsity * 0.8:  # Too few active neurons
+        adjustment_factor = 0.7
+    else:  # Within acceptable range
+        adjustment_factor = 1.0
+        
+    # Consider loss ratio in adjustment
+    if current_ratio > 10:  # MSE dominates too much
+        adjustment_factor *= 1.3
+    elif current_ratio < 0.1:  # L1 dominates too much
+        adjustment_factor *= 0.7
+        
+    return adjustment_factor
+
+
 class EarlyStopping:
     def __init__(self, patience=7, min_delta=0):
         self.patience = patience
@@ -267,6 +329,7 @@ def train_sparse_autoencoder(
     # Set up checkpointing
     checkpoint_handler = ModelCheckpoint(checkpoint_dir)
     start_epoch = 0
+    initial_sparsity_factor = 1.0
 
     # Resume from checkpoint if requested
     if resume_training:
@@ -340,6 +403,66 @@ def train_sparse_autoencoder(
                 activation_hist = plot_activation_histogram(hidden)
                 writer.add_image("Activation_Distribution", activation_hist, epoch)
 
+                loss_metrics = analyze_loss_scales(model, val_loader, initial_sparsity_factor, device)
+                print(f"Loss Analysis:")
+                print(f"MSE Scale: {loss_metrics['avg_mse']:.6f}")
+                print(f"L1 Scale (weighted): {loss_metrics['weighted_l1']:.6f}")
+                print(f"Loss Ratio (MSE/L1): {loss_metrics['loss_ratio']:.6f}")
+
+                adjustment = suggest_sparsity_factor(loss_metrics)
+                print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
+                
+                # Log detailed loss analysis
+                writer.add_scalars('Loss_Analysis', {
+                    'mse_scale': loss_metrics['avg_mse'],
+                    'l1_scale': loss_metrics['avg_l1'],
+                    'weighted_l1_scale': loss_metrics['weighted_l1'],
+                    'loss_ratio': loss_metrics['loss_ratio']
+                }, epoch)
+
+            if ib % 250 == 0 and ib!=0:
+                val_metrics = {"val_mse": 0, "val_l1": 0, "val_total": 0}
+                # Validation
+                model.eval()
+
+                with torch.no_grad():
+                    for batch in val_loader:
+                        batch = batch.to(device)
+                        recon, hidden, batch_metrics = model(batch)
+
+                        mse = mse_loss(recon, batch)
+                        l1 = hidden.abs().mean()
+                        total_loss = mse + sparsity_factor * l1
+
+                        val_metrics["val_mse"] += mse.item()
+                        val_metrics["val_l1"] += l1.item()
+                        val_metrics["val_total"] += total_loss.item()
+
+                # Average validation metrics
+                for key in val_metrics:
+                    val_metrics[key] /= len(val_loader)
+
+                # Combine all metrics
+                all_metrics = {**epoch_metrics, **val_metrics}
+
+                # Log metrics to tensorboard
+                for key, value in all_metrics.items():
+                    writer.add_scalar(f"Metrics/{key}", value, epoch)
+
+                # Check if this is the best model
+                is_best = checkpoint_handler.is_best(val_metrics["val_total"])
+
+                # Save checkpoint
+                checkpoint_handler.save_checkpoint(
+                    model, optimizer, epoch, all_metrics, is_best=is_best
+                )
+
+                # Early stopping check
+                early_stopping(val_metrics["val_total"])
+                if early_stopping.early_stop:
+                    print(f"Early stopping triggered after {epoch + 1} epochs")
+                    break
+
         # Average metrics
         for key in epoch_metrics:
             epoch_metrics[key] /= len(train_loader)
@@ -352,47 +475,5 @@ def train_sparse_autoencoder(
         #if epoch % 2 == 0:  # Log every 5 epochs
             #activation_hist = plot_activation_histogram(hidden)
             #writer.add_image("Activation_Distribution", activation_hist, epoch)
-
-        # Validation
-        model.eval()
-        val_metrics = {"val_mse": 0, "val_l1": 0, "val_total": 0}
-
-        with torch.no_grad():
-            for batch in val_loader:
-                batch = batch.to(device)
-                recon, hidden = model(batch)
-
-                mse = mse_loss(recon, batch)
-                l1 = hidden.abs().mean()
-                total_loss = mse + sparsity_factor * l1
-
-                val_metrics["val_mse"] += mse.item()
-                val_metrics["val_l1"] += l1.item()
-                val_metrics["val_total"] += total_loss.item()
-
-        # Average validation metrics
-        for key in val_metrics:
-            val_metrics[key] /= len(val_loader)
-
-        # Combine all metrics
-        all_metrics = {**epoch_metrics, **val_metrics}
-
-        # Log metrics to tensorboard
-        for key, value in all_metrics.items():
-            writer.add_scalar(f"Metrics/{key}", value, epoch)
-
-        # Check if this is the best model
-        is_best = checkpoint_handler.is_best(val_metrics["val_total"])
-
-        # Save checkpoint
-        checkpoint_handler.save_checkpoint(
-            model, optimizer, epoch, all_metrics, is_best=is_best
-        )
-
-        # Early stopping check
-        early_stopping(val_metrics["val_total"])
-        if early_stopping.early_stop:
-            print(f"Early stopping triggered after {epoch + 1} epochs")
-            break
 
     return model
