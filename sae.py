@@ -191,6 +191,7 @@ def analyze_loss_scales(model, dataloader, current_sparsity_factor, device):
             total_mse += mse.item()
             total_l1 += l1.item()
             num_batches += 1
+            torch.cuda.empty_cache() # Clear memory
     
     avg_mse = total_mse / num_batches
     avg_l1 = total_l1 / num_batches
@@ -274,7 +275,7 @@ def train_sparse_autoencoder(
     input_dim: int,
     hidden_dim: int,
     k: int,
-    batch_size: int = 32,
+    batch_size: int = 2,
     num_epochs: int = 100,
     learning_rate: float = 1e-3,
     sparsity_factor: float = 10.0,
@@ -330,6 +331,9 @@ def train_sparse_autoencoder(
     checkpoint_handler = ModelCheckpoint(checkpoint_dir)
     start_epoch = 0
     initial_sparsity_factor = 1.0
+    adjustment = 1.0
+
+    sparsity_factor = initial_sparsity_factor
 
     # Resume from checkpoint if requested
     if resume_training:
@@ -371,6 +375,7 @@ def train_sparse_autoencoder(
             # Calculate losses
             mse = mse_loss(recon, batch)
             l1 = hidden.abs().mean()
+
             total_loss = mse + sparsity_factor * l1
 
             # Backward pass
@@ -410,6 +415,7 @@ def train_sparse_autoencoder(
                 print(f"Loss Ratio (MSE/L1): {loss_metrics['loss_ratio']:.6f}")
 
                 adjustment = suggest_sparsity_factor(loss_metrics)
+                sparsity_factor *= adjustment
                 print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
                 
                 # Log detailed loss analysis
