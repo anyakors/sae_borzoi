@@ -218,14 +218,14 @@ def suggest_sparsity_factor(metrics, target_sparsity=0.05):
     target_sparsity: desired fraction of non-zero activations
     """
     current_ratio = metrics['loss_ratio']
-    current_sparsity = 1 - metrics['sparsity_ratio']  # Convert zero ratio to activation ratio
+    #current_sparsity = 1 - metrics['sparsity_ratio']  # Convert zero ratio to activation ratio
     
-    if current_sparsity > target_sparsity * 1.2:  # Too many active neurons
-        adjustment_factor = 1.5
-    elif current_sparsity < target_sparsity * 0.8:  # Too few active neurons
-        adjustment_factor = 0.7
-    else:  # Within acceptable range
-        adjustment_factor = 1.0
+    #if current_sparsity > target_sparsity * 1.2:  # Too many active neurons
+    #    adjustment_factor = 1.5
+    #elif current_sparsity < target_sparsity * 0.8:  # Too few active neurons
+    #    adjustment_factor = 0.7
+    #else:  # Within acceptable range
+    #    adjustment_factor = 1.0
         
     # Consider loss ratio in adjustment
     if current_ratio > 10:  # MSE dominates too much
@@ -322,7 +322,7 @@ def train_sparse_autoencoder(
     )
 
     val_loader = DataLoader(
-        val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers
+        val_dataset, batch_size=1, shuffle=False, num_workers=num_workers
     )
 
     # Initialize model, optimizer, and loss functions
