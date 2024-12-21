@@ -199,6 +199,8 @@ def analyze_loss_scales(model, dataloader, current_sparsity_factor, device):
     
     avg_mse = total_mse / num_batches
     avg_l1 = total_l1 / num_batches
+
+    sparsity_ratio = (hidden == 0).float().mean(dim=1)
     
     # Calculate ratio between losses
     loss_ratio = avg_mse / (current_sparsity_factor * avg_l1)
@@ -207,25 +209,26 @@ def analyze_loss_scales(model, dataloader, current_sparsity_factor, device):
         'avg_mse': avg_mse,
         'avg_l1': avg_l1,
         'weighted_l1': current_sparsity_factor * avg_l1,
-        'loss_ratio': loss_ratio
+        'loss_ratio': loss_ratio,
+        'sparsity_ratio': sparsity_ratio.mean().item()
     }
     
     return metrics
 
-def suggest_sparsity_factor(metrics, target_sparsity=0.05):
+def suggest_sparsity_factor(metrics, target_sparsity=0.6):
     """
     Suggest sparsity factor adjustment based on current metrics.
     target_sparsity: desired fraction of non-zero activations
     """
     current_ratio = metrics['loss_ratio']
-    #current_sparsity = 1 - metrics['sparsity_ratio']  # Convert zero ratio to activation ratio
+    current_sparsity = 1 - metrics['sparsity_ratio']  # Convert zero ratio to activation ratio
     
-    #if current_sparsity > target_sparsity * 1.2:  # Too many active neurons
-    #    adjustment_factor = 1.5
-    #elif current_sparsity < target_sparsity * 0.8:  # Too few active neurons
-    #    adjustment_factor = 0.7
-    #else:  # Within acceptable range
-    #    adjustment_factor = 1.0
+    if current_sparsity > target_sparsity * 1.2:  # Too many active neurons
+        adjustment_factor = 1.5
+    elif current_sparsity < target_sparsity * 0.8:  # Too few active neurons
+        adjustment_factor = 0.7
+    else:  # Within acceptable range
+        adjustment_factor = 1.0
         
     # Consider loss ratio in adjustment
     if current_ratio > 10:  # MSE dominates too much
