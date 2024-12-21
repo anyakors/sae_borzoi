@@ -180,8 +180,11 @@ def analyze_loss_scales(model, dataloader, current_sparsity_factor, device):
     total_l1 = 0
     num_batches = 0
     
+    ib = 0
+    pbar = tqdm(dataloader, desc=f"val step {ib+1}")
+
     with torch.no_grad():
-        for batch in dataloader:
+        for batch in pbar:
             batch = batch.to(device)
             recon, hidden, _ = model(batch)
             
@@ -192,6 +195,7 @@ def analyze_loss_scales(model, dataloader, current_sparsity_factor, device):
             total_l1 += l1.item()
             num_batches += 1
             torch.cuda.empty_cache() # Clear memory
+            ib += 1
     
     avg_mse = total_mse / num_batches
     avg_l1 = total_l1 / num_batches
@@ -280,7 +284,7 @@ def train_sparse_autoencoder(
     learning_rate: float = 1e-3,
     sparsity_factor: float = 10.0,
     patience: int = 7,
-    num_workers: int = 4,
+    num_workers: int = 1,
     sparsity_method: str = "topk",
     global_max: float = None,
     checkpoint_dir: str = "checkpoints",
