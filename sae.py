@@ -411,30 +411,6 @@ def train_sparse_autoencoder(
                         }
                     )
 
-            if ib % 100 == 0 and ib!=0:
-
-                activation_hist = plot_activation_histogram(hidden)
-                writer.add_image("Activation_Distribution", activation_hist, ib + epoch*len(train_loader))
-
-                torch.cuda.empty_cache()
-                loss_metrics = analyze_loss_scales(model, val_loader, sparsity_factor, device)
-                print(f"Loss Analysis:")
-                print(f"MSE Scale: {loss_metrics['avg_mse']:.6f}")
-                print(f"L1 Scale (weighted): {loss_metrics['weighted_l1']:.6f}")
-                print(f"Loss Ratio (MSE/L1): {loss_metrics['loss_ratio']:.6f}")
-
-                adjustment = suggest_sparsity_factor(loss_metrics)
-                sparsity_factor *= adjustment
-                print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
-                
-                # Log detailed loss analysis
-                writer.add_scalars('Loss_Analysis', {
-                    'mse_scale': loss_metrics['avg_mse'],
-                    'l1_scale': loss_metrics['avg_l1'],
-                    'weighted_l1_scale': loss_metrics['weighted_l1'],
-                    'loss_ratio': loss_metrics['loss_ratio']
-                }, epoch)
-
             if ib % 250 == 0 and ib!=0:
                 val_metrics = {"val_mse": 0, "val_l1": 0, "val_total": 0}
                 # Validation
@@ -482,6 +458,27 @@ def train_sparse_autoencoder(
         for key in epoch_metrics:
             epoch_metrics[key] /= len(train_loader)
 
+        activation_hist = plot_activation_histogram(hidden)
+        writer.add_image("Activation_Distribution", activation_hist, epoch)
+
+        torch.cuda.empty_cache()
+        loss_metrics = analyze_loss_scales(model, val_loader, sparsity_factor, device)
+        print(f"Loss Analysis:")
+        print(f"MSE Scale: {loss_metrics['avg_mse']:.6f}")
+        print(f"L1 Scale (weighted): {loss_metrics['weighted_l1']:.6f}")
+        print(f"Loss Ratio (MSE/L1): {loss_metrics['loss_ratio']:.6f}")
+
+        adjustment = suggest_sparsity_factor(loss_metrics)
+        sparsity_factor *= adjustment
+        print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
+        
+        # Log detailed loss analysis
+        writer.add_scalars('Loss_Analysis', {
+            'mse_scale': loss_metrics['avg_mse'],
+            'l1_scale': loss_metrics['avg_l1'],
+            'weighted_l1_scale': loss_metrics['weighted_l1'],
+            'loss_ratio': loss_metrics['loss_ratio']
+        }, epoch)
         # Log metrics to tensorboard
         #for key, value in epoch_metrics.items():
         #    writer.add_scalar(f"Metrics/{key}", value, epoch)
