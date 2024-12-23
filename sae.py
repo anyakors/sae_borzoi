@@ -430,15 +430,15 @@ def train_sparse_autoencoder(
                         val_metrics["val_total"] += total_loss.item()
 
                 # Average validation metrics
-                for key in val_metrics:
-                    val_metrics[key] /= len(val_loader)
+                #for key in val_metrics:
+                #    val_metrics[key] /= len(val_loader)
 
                 # Combine all metrics
-                all_metrics = {**epoch_metrics, **val_metrics}
+                all_metrics = {**val_metrics} #**epoch_metrics, 
 
                 # Log metrics to tensorboard
                 for key, value in all_metrics.items():
-                    writer.add_scalar(f"Metrics/{key}", value, epoch)
+                    writer.add_scalar(f"Metrics/{key}", value/(ib+1), ib + epoch*len(train_loader))
 
                 # Check if this is the best model
                 is_best = checkpoint_handler.is_best(val_metrics["val_total"])
@@ -468,9 +468,9 @@ def train_sparse_autoencoder(
         print(f"L1 Scale (weighted): {loss_metrics['weighted_l1']:.6f}")
         print(f"Loss Ratio (MSE/L1): {loss_metrics['loss_ratio']:.6f}")
 
-        adjustment = suggest_sparsity_factor(loss_metrics)
-        sparsity_factor *= adjustment
-        print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
+        #adjustment = suggest_sparsity_factor(loss_metrics)
+        #sparsity_factor *= adjustment
+        #print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
         
         # Log detailed loss analysis
         writer.add_scalars('Loss_Analysis', {
