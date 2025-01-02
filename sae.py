@@ -476,7 +476,7 @@ def train_sparse_autoencoder(
         print(f"L1 Scale (weighted): {loss_metrics['weighted_l1']:.6f}")
         print(f"Loss Ratio (MSE/L1): {loss_metrics['loss_ratio']:.6f}")
 
-        adjustment = suggest_sparsity_factor(loss_metrics)
+        adjustment = suggest_sparsity_factor(loss_metrics, sparsity_target)
         sparsity_factor *= adjustment
         #print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
         
