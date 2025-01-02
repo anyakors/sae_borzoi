@@ -284,7 +284,8 @@ def train_sparse_autoencoder(
     k: int,
     batch_size: int = 2,
     num_epochs: int = 100,
-    learning_rate: float = 1e-3,
+    learning_rate: float = 1e-5,
+    warmup_steps: int = 100,
     sparsity_factor: float = 10.0,
     patience: int = 7,
     num_workers: int = 1,
@@ -333,6 +334,11 @@ def train_sparse_autoencoder(
     model = SparseAutoencoder(input_dim, hidden_dim, k).to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     mse_loss = nn.MSELoss()
+
+    def warmup_fn(step):
+        return min(step / warmup_steps, 1.0)
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_fn)
 
     # Set up checkpointing
     checkpoint_handler = ModelCheckpoint(checkpoint_dir)
@@ -389,6 +395,7 @@ def train_sparse_autoencoder(
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
+            scheduler.step()
 
             # Update metrics
             epoch_metrics["train_mse"] += mse.item()
@@ -448,11 +455,11 @@ def train_sparse_autoencoder(
                     model, optimizer, epoch, all_metrics, is_best=is_best
                 )
 
-                # Early stopping check
-                early_stopping(val_metrics["val_total"])
-                if early_stopping.early_stop:
-                    print(f"Early stopping triggered after {epoch + 1} epochs")
-                    break
+        # Early stopping check
+        early_stopping(val_metrics["val_total"])
+        if early_stopping.early_stop:
+            print(f"Early stopping triggered after {epoch + 1} epochs")
+            break
 
         # Average metrics
         for key in epoch_metrics:
