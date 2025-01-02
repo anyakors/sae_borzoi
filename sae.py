@@ -215,7 +215,7 @@ def analyze_loss_scales(model, dataloader, current_sparsity_factor, device):
     
     return metrics
 
-def suggest_sparsity_factor(metrics, target_sparsity=0.6):
+def suggest_sparsity_factor(metrics, target_sparsity=0.075):
     """
     Suggest sparsity factor adjustment based on current metrics.
     target_sparsity: desired fraction of non-zero activations
@@ -287,6 +287,7 @@ def train_sparse_autoencoder(
     learning_rate: float = 1e-5,
     warmup_steps: int = 100,
     sparsity_factor: float = 10.0,
+    sparsity_target: float = 0.075,
     patience: int = 7,
     num_workers: int = 1,
     sparsity_method: str = "topk",
@@ -475,8 +476,8 @@ def train_sparse_autoencoder(
         print(f"L1 Scale (weighted): {loss_metrics['weighted_l1']:.6f}")
         print(f"Loss Ratio (MSE/L1): {loss_metrics['loss_ratio']:.6f}")
 
-        #adjustment = suggest_sparsity_factor(loss_metrics)
-        #sparsity_factor *= adjustment
+        adjustment = suggest_sparsity_factor(loss_metrics)
+        sparsity_factor *= adjustment
         #print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
         
         # Log detailed loss analysis
