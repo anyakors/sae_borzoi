@@ -9,7 +9,7 @@ with open(config_file) as config_open:
     configs = json.load(config_open)
 
 # Find global maximum across all files
-activation_pattern = configs["activations_path"]
+activation_pattern = configs["activations_path"]+"/*.h5"
 global_max = find_global_max(activation_pattern)
 print(f"Global maximum value: {global_max}")
 
