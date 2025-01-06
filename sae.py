@@ -478,14 +478,15 @@ def train_sparse_autoencoder(
 
         adjustment = suggest_sparsity_factor(loss_metrics, sparsity_target)
         sparsity_factor *= adjustment
-        #print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
+        print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
         
         # Log detailed loss analysis
         writer.add_scalars('Loss_Analysis', {
             'mse_scale': loss_metrics['avg_mse'],
             'l1_scale': loss_metrics['avg_l1'],
             'weighted_l1_scale': loss_metrics['weighted_l1'],
-            'loss_ratio': loss_metrics['loss_ratio']
+            'loss_ratio': loss_metrics['loss_ratio'],
+            'sparsity_factor': sparsity_factor
         }, epoch)
         # Log metrics to tensorboard
         #for key, value in epoch_metrics.items():
