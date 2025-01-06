@@ -152,7 +152,7 @@ class SparseAutoencoder(nn.Module):
         x = x.view(-1, x.size(-1))
 
         # Encode
-        h = self.encoder(x)
+        h = nn.ReLU()(self.encoder(x))
 
         # Apply sparsity
         h_sparse = self.get_sparse_activations(h)
@@ -332,7 +332,7 @@ def train_sparse_autoencoder(
 
     # Initialize model, optimizer, and loss functions
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = SparseAutoencoder(input_dim, hidden_dim, k).to(device)
+    model = SparseAutoencoder(input_dim, hidden_dim, k, sparsity_method='threshold').to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     mse_loss = nn.MSELoss()
 
@@ -380,6 +380,8 @@ def train_sparse_autoencoder(
 
         # Training
         pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")
+        # try:
+        # except IndexError:
         for ib, batch in enumerate(pbar):
             batch = batch.to(device)
 
