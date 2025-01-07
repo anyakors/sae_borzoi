@@ -139,12 +139,11 @@ class SparseAutoencoder(nn.Module):
         sparsity_ratio = (h_sparse == 0).float().mean(dim=1)
 
         # Active neuron diversity
-        active_neurons = (h_sparse != 0).sum(dim=0)
-
-        neuron_diversity = float(active_neurons.nonzero().size(0)) / h_sparse.size(1)
+        #active_neurons = (h_sparse != 0).sum(dim=0)
+        #neuron_diversity = float(active_neurons.nonzero().size(0)) / h_sparse.size(1)
 
         # Dead neuron count (never activated in batch)
-        dead_neurons = (active_neurons == 0).sum().item()
+        #dead_neurons = (active_neurons == 0).sum().item()
 
         # Activation statistics
         mean_activation = h_sparse.abs().mean().item()
@@ -152,8 +151,8 @@ class SparseAutoencoder(nn.Module):
 
         return {
             "sparsity_ratio": sparsity_ratio.mean().item(),
-            "neuron_diversity": neuron_diversity,  # Already a float, no need for .item()
-            "dead_neurons": dead_neurons,
+            #"neuron_diversity": neuron_diversity,  # Already a float, no need for .item()
+            #"dead_neurons": dead_neurons,
             "mean_activation": mean_activation,
             "std_activation": std_activation,
         }
@@ -383,8 +382,8 @@ def train_sparse_autoencoder(
             "train_l1": 0,
             "train_total": 0,
             "train_sparsity_ratio": 0,
-            "train_neuron_diversity": 0,
-            "train_dead_neurons": 0,
+            #"train_neuron_diversity": 0,
+            #"train_dead_neurons": 0,
             "train_mean_activation": 0,
             "train_std_activation": 0,
         }
@@ -470,6 +469,7 @@ def train_sparse_autoencoder(
                     )
         except IndexError:
             print("IndexError, skipping batch", ib)
+
         # Early stopping check
         early_stopping(val_metrics["val_total"])
         if early_stopping.early_stop:
