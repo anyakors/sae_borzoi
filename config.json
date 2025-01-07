@@ -7,7 +7,7 @@
   "expansion_factor": 2,
   "seq_len": 262144,
   "input_channels": 608,
-  "topk_pct": 0.75,
+  "topk_pct": 0.5,
   "sparsity_target": 0.075,
   "learning_rate": 1e-5
 }

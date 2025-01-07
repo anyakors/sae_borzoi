@@ -86,14 +86,22 @@ class SparseAutoencoder(nn.Module):
         self.sparsity_method = sparsity_method
 
         # Encoder
-        self.encoder = nn.Linear(input_dim, hidden_dim)
-
+        self.encoder = nn.Linear(input_dim, hidden_dim, bias=False)
         # Decoder
-        self.decoder = nn.Linear(hidden_dim, input_dim)
+        self.decoder = nn.Linear(hidden_dim, input_dim, bias=False)
+
+        self.pre_bias = nn.Parameter(torch.zeros(input_dim))
+        self.latent_bias = nn.Parameter(torch.zeros(hidden_dim))
 
         # Temperature parameter for smooth top-k
         self.temperature = nn.Parameter(torch.tensor(1.0))
 
+    def encode(self, x):
+        return self.encoder(x - self.pre_bias) + self.latent_bias
+
+    def decode(self, h):
+        return self.decoder(h) + self.pre_bias
+    
     def get_sparse_activations(self, h):
         """Apply sparsity using the selected method"""
         if self.sparsity_method == "topk":
@@ -102,6 +110,13 @@ class SparseAutoencoder(nn.Module):
             threshold = topk_values[:, -1].unsqueeze(1)
             return h * (h.abs() >= threshold)
 
+        if self.sparsity_method == "topk_o":
+            topk = torch.topk(h, k=self.k, dim=-1)
+            values = topk.values
+            result = torch.zeros_like(h)
+            result.scatter_(-1, topk.indices, values)
+            return result
+    
         elif self.sparsity_method == "threshold":
             # Adaptive threshold based on activation statistics
             threshold = h.abs().mean(dim=1, keepdim=True) + h.abs().std(
@@ -123,9 +138,9 @@ class SparseAutoencoder(nn.Module):
         # Sparsity ratio (% of zero activations)
         sparsity_ratio = (h_sparse == 0).float().mean(dim=1)
 
-        # Active neuron diversity (how many different neurons are active across batch)
+        # Active neuron diversity
         active_neurons = (h_sparse != 0).sum(dim=0)
-        # Now we convert to float before division to avoid the .item() issue
+
         neuron_diversity = float(active_neurons.nonzero().size(0)) / h_sparse.size(1)
 
         # Dead neuron count (never activated in batch)
@@ -151,16 +166,12 @@ class SparseAutoencoder(nn.Module):
         # reshape to (batch_size * length, channels)
         x = x.view(-1, x.size(-1))
 
-        # Encode
-        h = nn.ReLU()(self.encoder(x))
+        h = self.encode(x)
 
-        # Apply sparsity
         h_sparse = self.get_sparse_activations(h)
 
-        # Decode
-        x_recon = self.decoder(h_sparse)
+        x_recon = self.decode(h_sparse)
 
-        # Calculate metrics
         metrics = self.get_metrics(h_sparse)
 
         # Reshape back to (batch_size, length, channels)
@@ -290,7 +301,7 @@ def train_sparse_autoencoder(
     sparsity_target: float = 0.075,
     patience: int = 7,
     num_workers: int = 1,
-    sparsity_method: str = "topk",
+    sparsity_method: str = "topk_o",
     global_max: float = None,
     checkpoint_dir: str = "checkpoints",
     resume_training: bool = False,
@@ -332,7 +343,7 @@ def train_sparse_autoencoder(
 
     # Initialize model, optimizer, and loss functions
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = SparseAutoencoder(input_dim, hidden_dim, k, sparsity_method='threshold').to(device)
+    model = SparseAutoencoder(input_dim, hidden_dim, k, sparsity_method=sparsity_method).to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     mse_loss = nn.MSELoss()
 
@@ -478,8 +489,8 @@ def train_sparse_autoencoder(
         print(f"L1 Scale (weighted): {loss_metrics['weighted_l1']:.6f}")
         print(f"Loss Ratio (MSE/L1): {loss_metrics['loss_ratio']:.6f}")
 
-        adjustment = suggest_sparsity_factor(loss_metrics, sparsity_target)
-        sparsity_factor *= adjustment
+        #adjustment = suggest_sparsity_factor(loss_metrics, sparsity_target)
+        #sparsity_factor *= adjustment
         print(f"Suggested sparsity_factor adjustment: {adjustment:.2f}x")
         
         # Log detailed loss analysis
