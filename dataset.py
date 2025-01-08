@@ -98,14 +98,13 @@ class ActivationDataset(Dataset):
 class NormalizeActivations:
     def __init__(self, global_max=None):
         self.global_max = global_max
-        # take sorted list of global max dictionary values
-        self.global_max_flat = list(global_max.values())
-        
+
     def __call__(self, x):
         """
         Normalize activation values.
         """
         if self.global_max is not None:
+            global_max_flat = list(self.global_max.values())
             # divide along last dimension
-            return x / torch.tensor(self.global_max_flat, dtype=torch.float32)
+            return x / torch.tensor(global_max_flat, dtype=torch.float32)
         return (x - x.mean()) / (x.std() + 1e-5)
