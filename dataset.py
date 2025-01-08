@@ -5,7 +5,7 @@ import glob
 import numpy as np
 from tqdm import tqdm
 
-def find_global_max(activation_path_pattern):
+def find_global_max(activation_path_pattern, num_channels=608):
     """
     Find the global maximum value across all HDF5 files matching the pattern.
     Processes files one at a time to minimize memory usage.
@@ -21,21 +21,20 @@ def find_global_max(activation_path_pattern):
     if not file_paths:
         raise ValueError(f"No files found matching pattern: {activation_path_pattern}")
     
-    global_max = float('-inf')
+    # initialize as dict for all channels
+    global_max = dict(zip(range(num_channels), [float('-inf')]*num_channels))
     
     # Process each file individually
     for file_path in tqdm(file_paths, desc="Processing files"):
         with h5py.File(file_path, 'r') as f:
             first_key = list(f.keys())[0]
             # Load the dataset but don't read it into memory yet
-            dataset = f[first_key]
-            
-            # Process in chunks to minimize memory usage
-            chunk_size = 8  # Adjust based on your available memory
-            for i in range(0, len(dataset), chunk_size):
-                chunk = dataset[i:i + chunk_size]
-                chunk_max = float(np.max(chunk))
-                global_max = max(global_max, chunk_max)
+            dataset = f[first_key][()]
+            maxes = np.max(dataset, axis=(0,1))
+
+            for i in range(num_channels):
+                channel_max = maxes[i]
+                global_max[i] = max(global_max[i], channel_max)
     
     return global_max
 
@@ -99,11 +98,14 @@ class ActivationDataset(Dataset):
 class NormalizeActivations:
     def __init__(self, global_max=None):
         self.global_max = global_max
+        # take sorted list of global max dictionary values
+        self.global_max_flat = list(global_max.values())
         
     def __call__(self, x):
         """
         Normalize activation values.
         """
         if self.global_max is not None:
-            return x / self.global_max
+            # divide along last dimension
+            return x / torch.tensor(self.global_max_flat, dtype=torch.float32)
         return (x - x.mean()) / (x.std() + 1e-5)

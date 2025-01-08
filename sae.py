@@ -10,8 +10,18 @@ import matplotlib.pyplot as plt
 import io
 from torchvision.transforms import ToTensor
 from dataset import *
+from typing import Callable, Any
+
 import json
 import os
+
+
+def LN(x: torch.Tensor, eps: float = 1e-5) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    mu = x.mean(dim=-1, keepdim=True)
+    x = x - mu
+    std = x.std(dim=-1, keepdim=True)
+    x = x / (std + eps)
+    return x, mu, std
 
 
 class ModelCheckpoint:
@@ -71,7 +81,7 @@ class ModelCheckpoint:
 
 
 class SparseAutoencoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim, k, sparsity_method="topk"):
+    def __init__(self, input_dim, hidden_dim, k, sparsity_method="topk", normalize=True):
         """
         Enhanced sparse autoencoder with multiple sparsity options.
 
@@ -84,6 +94,7 @@ class SparseAutoencoder(nn.Module):
         super().__init__()
         self.k = k
         self.sparsity_method = sparsity_method
+        self.normalize = normalize
 
         self.encoder = nn.Linear(input_dim, hidden_dim, bias=False)
         self.decoder = nn.Linear(hidden_dim, input_dim, bias=False)
@@ -94,10 +105,20 @@ class SparseAutoencoder(nn.Module):
         # Temperature parameter for smooth top-k
         self.temperature = nn.Parameter(torch.tensor(1.0))
 
+    def preprocess(self, x: torch.Tensor) -> tuple[torch.Tensor, dict[str, Any]]:
+        if not self.normalize:
+            return x, dict()
+        x, mu, std = LN(x)
+        return x, dict(mu=mu, std=std)
+    
     def encode(self, x):
-        return self.encoder(x - self.pre_bias) + self.latent_bias
-
-    def decode(self, h):
+        x, params = self.preprocess(x)
+        return self.encoder(x - self.pre_bias) + self.latent_bias, params
+    
+    def decode(self, h, params):
+        if self.normalize:
+            assert params is not None
+            ret = ret * params["std"] + params["mu"]
         return self.decoder(h) + self.pre_bias
     
     def get_sparse_activations(self, h):
@@ -163,11 +184,11 @@ class SparseAutoencoder(nn.Module):
         # reshape to (batch_size * length, channels)
         x = x.view(-1, x.size(-1))
 
-        h = self.encode(x) # (batch_size * length, hidden_dim)
+        h, params = self.encode(x) # (batch_size * length, hidden_dim)
 
         h_sparse = self.get_sparse_activations(h) # (batch_size * length, hidden_dim)
 
-        x_recon = self.decode(h_sparse) # (batch_size * length, channels)
+        x_recon = self.decode(h_sparse, params) # (batch_size * length, channels)
 
         metrics = self.get_metrics(h_sparse)
 
@@ -347,7 +368,7 @@ def train_sparse_autoencoder(
     def warmup_fn(step):
         return min(step / warmup_steps, 1.0)
 
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_fn)
+    #scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_fn)
 
     # Set up checkpointing
     checkpoint_handler = ModelCheckpoint(checkpoint_dir)
@@ -400,7 +421,7 @@ def train_sparse_autoencoder(
             mse = mse_loss(recon, batch)
             l1 = hidden.abs().mean()
 
-            total_loss = mse + sparsity_factor * l1
+            total_loss = mse #+ sparsity_factor * l1
 
             # Backward pass
             optimizer.zero_grad()
@@ -441,7 +462,7 @@ def train_sparse_autoencoder(
 
                         mse = mse_loss(recon, batch)
                         l1 = hidden.abs().mean()
-                        total_loss = mse + sparsity_factor * l1
+                        total_loss = mse #+ sparsity_factor * l1
 
                         val_metrics["val_mse"] += mse.item()
                         val_metrics["val_l1"] += l1.item()

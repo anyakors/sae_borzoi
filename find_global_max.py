@@ -11,7 +11,8 @@ with open(config_file) as config_open:
 # Find global maximum across all files
 activation_pattern = configs["activations_path"]+"/*.h5"
 global_max = find_global_max(activation_pattern)
-print(f"Global maximum value: {global_max}")
+print(f"Global maximum values: {global_max}")
 
-# save to npy file
-np.save(configs["global_max_save_path"], global_max)
+# save to json file
+with open(configs["global_max_save_path"], 'w') as file_open:
+    json.dump(global_max, file_open)
