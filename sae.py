@@ -116,10 +116,11 @@ class SparseAutoencoder(nn.Module):
         return self.encoder(x - self.pre_bias) + self.latent_bias, params
     
     def decode(self, h, params):
+        recon = self.decoder(h) + self.pre_bias
         if self.normalize:
             assert params is not None
-            ret = ret * params["std"] + params["mu"]
-        return self.decoder(h) + self.pre_bias
+            recon = recon * params["std"] + params["mu"]
+        return recon
     
     def get_sparse_activations(self, h):
         """Apply sparsity using the selected method"""
