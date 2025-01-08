@@ -85,9 +85,7 @@ class SparseAutoencoder(nn.Module):
         self.k = k
         self.sparsity_method = sparsity_method
 
-        # Encoder
         self.encoder = nn.Linear(input_dim, hidden_dim, bias=False)
-        # Decoder
         self.decoder = nn.Linear(hidden_dim, input_dim, bias=False)
 
         self.pre_bias = nn.Parameter(torch.zeros(input_dim))
@@ -165,11 +163,11 @@ class SparseAutoencoder(nn.Module):
         # reshape to (batch_size * length, channels)
         x = x.view(-1, x.size(-1))
 
-        h = self.encode(x)
+        h = self.encode(x) # (batch_size * length, hidden_dim)
 
-        h_sparse = self.get_sparse_activations(h)
+        h_sparse = self.get_sparse_activations(h) # (batch_size * length, hidden_dim)
 
-        x_recon = self.decode(h_sparse)
+        x_recon = self.decode(h_sparse) # (batch_size * length, channels)
 
         metrics = self.get_metrics(h_sparse)
 
@@ -391,84 +389,84 @@ def train_sparse_autoencoder(
         # Training
         pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")
 
-        try:
-            for ib, batch in enumerate(pbar):
-                batch = batch.to(device)
+        #try:
+        for ib, batch in enumerate(pbar):
+            batch = batch.to(device)
 
-                # Forward pass
-                recon, hidden, batch_metrics = model(batch)
+            # Forward pass
+            recon, hidden, batch_metrics = model(batch)
 
-                # Calculate losses
-                mse = mse_loss(recon, batch)
-                l1 = hidden.abs().mean()
+            # Calculate losses
+            mse = mse_loss(recon, batch)
+            l1 = hidden.abs().mean()
 
-                total_loss = mse + sparsity_factor * l1
+            total_loss = mse + sparsity_factor * l1
 
-                # Backward pass
-                optimizer.zero_grad()
-                total_loss.backward()
-                optimizer.step()
-                scheduler.step()
+            # Backward pass
+            optimizer.zero_grad()
+            total_loss.backward()
+            optimizer.step()
+            #scheduler.step()
 
-                # Update metrics
-                epoch_metrics["train_mse"] += mse.item()
-                epoch_metrics["train_l1"] += l1.item()
-                epoch_metrics["train_total"] += total_loss.item()
+            # Update metrics
+            epoch_metrics["train_mse"] += mse.item()
+            epoch_metrics["train_l1"] += l1.item()
+            epoch_metrics["train_total"] += total_loss.item()
 
-                for key, value in batch_metrics.items():
-                    epoch_metrics[f"train_{key}"] += value
+            for key, value in batch_metrics.items():
+                epoch_metrics[f"train_{key}"] += value
 
-                if ib % 10 == 0:
-                    # Log metrics to tensorboard
-                    for key, value in epoch_metrics.items():
-                        writer.add_scalar(f"Metrics/{key}", value/(ib+1), ib + epoch*len(train_loader))
+            if ib % 10 == 0:
+                # Log metrics to tensorboard
+                for key, value in epoch_metrics.items():
+                    writer.add_scalar(f"Metrics/{key}", value/(ib+1), ib + epoch*len(train_loader))
 
-                        pbar.set_postfix(
-                            {
-                                "MSE": mse.item(),
-                                "L1": l1.item(),
-                                "Sparsity": batch_metrics["sparsity_ratio"],
-                            }
-                        )
-
-                if ib % 250 == 0 and ib!=0:
-                    val_metrics = {"val_mse": 0, "val_l1": 0, "val_total": 0}
-                    # Validation
-                    model.eval()
-
-                    with torch.no_grad():
-                        for batch in val_loader:
-                            batch = batch.to(device)
-                            recon, hidden, batch_metrics = model(batch)
-
-                            mse = mse_loss(recon, batch)
-                            l1 = hidden.abs().mean()
-                            total_loss = mse + sparsity_factor * l1
-
-                            val_metrics["val_mse"] += mse.item()
-                            val_metrics["val_l1"] += l1.item()
-                            val_metrics["val_total"] += total_loss.item()
-
-                    # Average validation metrics
-                    #for key in val_metrics:
-                    #    val_metrics[key] /= len(val_loader)
-
-                    # Combine all metrics
-                    all_metrics = {**val_metrics} #**epoch_metrics, 
-
-                    # Log metrics to tensorboard
-                    for key, value in all_metrics.items():
-                        writer.add_scalar(f"Metrics/{key}", value/(ib+1), ib + epoch*len(train_loader))
-
-                    # Check if this is the best model
-                    is_best = checkpoint_handler.is_best(val_metrics["val_total"])
-
-                    # Save checkpoint
-                    checkpoint_handler.save_checkpoint(
-                        model, optimizer, epoch, all_metrics, is_best=is_best
+                    pbar.set_postfix(
+                        {
+                            "MSE": mse.item(),
+                            "L1": l1.item(),
+                            "Sparsity": batch_metrics["sparsity_ratio"],
+                        }
                     )
-        except IndexError:
-            print("IndexError, skipping batch", ib)
+
+            if ib % 250 == 0 and ib!=0:
+                val_metrics = {"val_mse": 0, "val_l1": 0, "val_total": 0}
+                # Validation
+                model.eval()
+
+                with torch.no_grad():
+                    for batch in val_loader:
+                        batch = batch.to(device)
+                        recon, hidden, batch_metrics = model(batch)
+
+                        mse = mse_loss(recon, batch)
+                        l1 = hidden.abs().mean()
+                        total_loss = mse + sparsity_factor * l1
+
+                        val_metrics["val_mse"] += mse.item()
+                        val_metrics["val_l1"] += l1.item()
+                        val_metrics["val_total"] += total_loss.item()
+
+                # Average validation metrics
+                #for key in val_metrics:
+                #    val_metrics[key] /= len(val_loader)
+
+                # Combine all metrics
+                all_metrics = {**val_metrics} #**epoch_metrics, 
+
+                # Log metrics to tensorboard
+                for key, value in all_metrics.items():
+                    writer.add_scalar(f"Metrics/{key}", value/(ib+1), ib + epoch*len(train_loader))
+
+                # Check if this is the best model
+                is_best = checkpoint_handler.is_best(val_metrics["val_total"])
+
+                # Save checkpoint
+                checkpoint_handler.save_checkpoint(
+                    model, optimizer, epoch, all_metrics, is_best=is_best
+                )
+        #except IndexError:
+        #    print("IndexError, skipping batch", ib)
 
         # Early stopping check
         early_stopping(val_metrics["val_total"])
