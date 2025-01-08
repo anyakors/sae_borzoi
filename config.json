@@ -5,8 +5,8 @@
   "model_save_path": "/home/anya/code/sae_borzoi/models/conv1d_2_exp16_topk0.1_lr1e-5_nol1",
   "layer_name": "conv1d_2",
   "expansion_factor": 16,
-  "seq_len": 262144,
-  "input_channels": 608,
+  "seq_len": 131072,
+  "input_channels": 736,
   "topk_pct": 0.1,
   "sparsity_target": 0.075,
   "learning_rate": 1e-5
