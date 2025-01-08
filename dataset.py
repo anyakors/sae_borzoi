@@ -62,7 +62,8 @@ class ActivationDataset(Dataset):
             self.activation_shape = chunk_shape[1:]  # Shape of single activation
             
         self.chunk_size = chunk_shape[0]  # Number of samples per file
-        self.total_samples = len(self.file_paths) * self.chunk_size
+        self.seq_divisor = 4 # divide the sequence length by this number to reduce memory usage
+        self.total_samples = len(self.file_paths) * self.chunk_size * self.seq_divisor
         
     def __len__(self):
         return self.total_samples
@@ -78,13 +79,15 @@ class ActivationDataset(Dataset):
             torch.Tensor: Activation tensor
         """
         # Calculate which file and which sample within the file
-        file_idx = idx // self.chunk_size
-        sample_idx = idx % self.chunk_size
+        file_idx = idx // (self.chunk_size * self.seq_divisor)
+        sample_idx = (idx % (self.chunk_size * self.seq_divisor)) // self.seq_divisor
+        seq_idx = (idx % (self.chunk_size * self.seq_divisor)) % self.seq_divisor
         
         # Load the appropriate chunk
         with h5py.File(self.file_paths[file_idx], 'r') as f:
             first_key = list(f.keys())[0]  # Get the first dataset key
-            activation = f[first_key][sample_idx]
+            seq_len = f[first_key].shape[1]
+            activation = f[first_key][sample_idx][seq_idx*seq_len//self.seq_divisor:(seq_idx+1)*seq_len//self.seq_divisor]
             
         # Convert to tensor
         activation = torch.tensor(activation, dtype=torch.float32)
