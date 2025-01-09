@@ -10,7 +10,7 @@ with open(config_file) as config_open:
 
 # Find global maximum across all files
 activation_pattern = configs["activations_path"]+"/*.h5"
-global_max = find_global_max(activation_pattern)
+global_max = find_global_max(activation_pattern, num_channels=configs["input_channels"])
 print(f"Global maximum values: {global_max}")
 
 # convert global_max dict to string
