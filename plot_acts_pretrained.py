@@ -10,14 +10,12 @@ from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-
-activation_path_pattern = '/home/anya/code/baskerville_sae/src/baskerville/scripts/v2_activations/conv1d_2/'
-
-seqs = pd.read_csv(activation_path_pattern+'train_seqs.bed', sep='\t', header=0)
-
 config_file = "config.json"
 with open(config_file) as config_open:
     configs = json.load(config_open)
+
+activation_path_pattern = configs['activations_path']
+seqs = pd.read_csv(activation_path_pattern+'/train_seqs.bed', sep='\t', header=0)
 
 # save new bed with paded coordinates
 
@@ -66,10 +64,9 @@ ints = pd.read_csv(f"{temp_folder}/seqs_intersect.bed", sep="\t", header=None)
 ints.columns = ["chr", "start", "end", "chunk_ind", "inner_ind", "chr2", "start2", "end2", "x1", "x2", "element"]
 
 file_paths_ = os.listdir(activation_path_pattern)
-file_paths = sorted(glob.glob(activation_path_pattern+'*.h5'))
+file_paths = sorted(glob.glob(activation_path_pattern+'/*.h5'))
 
 chunk_ids_present = [int(f.split('.')[0].split('_')[-1]) for f in file_paths_ if '.h5' in f]
-print(chunk_ids_present)
 
 els = []
 vals = []
@@ -83,7 +80,7 @@ for el in tqdm(ints['element'].unique()):
         rel_start = max(0, int(np.floor((row['start2'] - row['start'])/resolution)))
         rel_end = min(int(np.ceil((row['end2'] - row['start'])/resolution)), layer_seq_len)
         if file_idx in chunk_ids_present and rel_end-rel_start!=0 and feature_count<10000:
-            with h5py.File(file_paths[file_idx], 'r') as f:
+            with h5py.File(f"{activation_path_pattern}/activations_{file_idx}.h5", 'r') as f:
                 first_key = list(f.keys())[0]  # Get the first dataset key
                 seq_len = f[first_key].shape[1]
                 activations = f[first_key][seq_idx,rel_start:rel_end,:]
