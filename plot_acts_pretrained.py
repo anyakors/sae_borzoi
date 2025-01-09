@@ -82,7 +82,7 @@ for el in tqdm(ints['element'].unique()):
         seq_idx = row['inner_ind']
         rel_start = max(0, int(np.floor((row['start2'] - row['start'])/resolution)))
         rel_end = min(int(np.ceil((row['end2'] - row['start'])/resolution)), layer_seq_len)
-        if file_idx in chunk_ids_present and rel_end-rel_start!=0 and feature_count<500:
+        if file_idx in chunk_ids_present and rel_end-rel_start!=0 and feature_count<10000:
             with h5py.File(file_paths[file_idx], 'r') as f:
                 first_key = list(f.keys())[0]  # Get the first dataset key
                 seq_len = f[first_key].shape[1]
@@ -118,6 +118,7 @@ sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 plt.savefig(f'data/{layer_name}/activations_CA.png', dpi=300, bbox_inches='tight')
 plt.savefig(f'data/{layer_name}/activations_CA.pdf', bbox_inches='tight')
 
+plt.close()
 plt.figure(figsize=(3, 2))
 ax = sns.histplot(data=df_tf, x='activation', hue='element', bins=50, stat='density', common_norm=False, multiple='layer')
 plt.xlabel('Max activation')
@@ -129,6 +130,7 @@ sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
 plt.savefig(f'data/{layer_name}/activations_TF.png', dpi=300, bbox_inches='tight')
 plt.savefig(f'data/{layer_name}/activations_TF.pdf', bbox_inches='tight')
 
+plt.close()
 plt.figure(figsize=(3, 2))
 ax = sns.histplot(data=df_ls, x='activation', hue='element', bins=50, stat='density', common_norm=False, multiple='layer')
 plt.xlabel('Max activation')
@@ -145,6 +147,7 @@ exon_elems = [x for x in df_act['element'].unique() if 'exon' in x]
 for exon_el in exon_elems:
     df_ex = df_act[df_act['element']==exon_el]
 
+    plt.close()
     plt.figure(figsize=(3, 2))
     ax = sns.histplot(data=df_ex, x='activation', hue='element', bins=50, stat='density', common_norm=False, multiple='layer')
     plt.xlabel('Max activation')
