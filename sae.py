@@ -11,6 +11,7 @@ import io
 from torchvision.transforms import ToTensor
 from dataset import *
 from typing import Callable, Any
+import pandas as pd
 
 import json
 import os
@@ -105,6 +106,14 @@ class SparseAutoencoder(nn.Module):
         # Temperature parameter for smooth top-k
         self.temperature = nn.Parameter(torch.tensor(1.0))
 
+    def load_pretrained(self, pretrained_path):
+        """Load pretrained weights for encoder and decoder"""
+        pretrained = torch.load(pretrained_path)
+        self.encoder.load_state_dict(pretrained["encoder"])
+        self.decoder.load_state_dict(pretrained["decoder"])
+        self.pre_bias = nn.Parameter(pretrained["pre_bias"])
+        self.latent_bias = nn.Parameter(pretrained["latent_bias"])
+
     def preprocess(self, x: torch.Tensor) -> tuple[torch.Tensor, dict[str, Any]]:
         if not self.normalize:
             return x, dict()
@@ -197,6 +206,29 @@ class SparseAutoencoder(nn.Module):
         x_recon = x_recon.view(*input_shape)
 
         return x_recon, h_sparse, metrics
+    
+    def infer(self, x):
+        """
+        Run inference on a sparse autoencoder model.
+
+        Args:
+            model: SparseAutoencoder model
+            x: Input tensor
+        """
+        input_shape = x.shape
+
+        x = x.view(-1, x.size(-1))
+
+        h, params = self.encode(x) # (batch_size * length, hidden_dim)
+
+        h_sparse = self.get_sparse_activations(h) # (batch_size * length, hidden_dim)
+
+        x_recon = self.decode(h_sparse, params) # (batch_size * length, channels)
+
+        # Reshape back to (batch_size, length, channels)
+        x_recon = x_recon.view(*input_shape)
+
+        return h_sparse, x_recon
 
 
 def analyze_loss_scales(model, dataloader, current_sparsity_factor, device):
@@ -305,6 +337,100 @@ def plot_activation_histogram(activations):
     plt.close()
     return image
 
+
+def infer_sparse_autoencoder(
+    checkpoint_path: str,
+    activation_path: str,
+    input_dim: int,
+    hidden_dim: int,
+    k: int,
+    sparsity_method: str = "topk_o",
+    transform=None, resolution=8, pad=163840, top_chunk_pct=0.25):
+
+    # Initialize model, optimizer, and loss functions
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = SparseAutoencoder(input_dim, hidden_dim, k, sparsity_method=sparsity_method).to(device)
+    model.load_pretrained(checkpoint_path)
+    model.eval()
+
+    activation_path_pattern = str(Path(activation_path) / "activations_*.h5")
+
+    # columns 3, 4 - file id and chunk id
+    seqs = pd.read_csv(activation_path+'/train_seqs.bed', sep='\t', header=0)
+    seqs['start'] = seqs['1'] - pad
+    seqs['end'] = seqs['2'] + pad
+
+    # make a dictionary with file ids as keys (level 1), chunk ids as keys (level 2) and seq coordinates as values
+    seqs_dict = seqs.groupby(['chunk_ind', 'inner_ind'])[['0', 'start', 'end']].apply(lambda x: x.values.tolist()).to_dict()
+
+    # list all activations 
+    file_paths = sorted(glob.glob(activation_path_pattern))
+    # Get total number of samples and shape
+    with h5py.File(file_paths[0], 'r') as f:
+        first_key = list(f.keys())[0]  # Get the first dataset key
+        chunk_shape = f[first_key].shape
+        activation_shape = chunk_shape[1:]  # Shape of single activation
+        
+    chunk_size = chunk_shape[0]  # Number of samples per file
+    seq_divisor = 4 # divide the sequence length by this number to reduce memory usage
+    total_samples = len(file_paths) * chunk_size * seq_divisor
+
+    list_nodes = []
+    list_acts_vals = []
+    list_seq_coords = []
+
+    for idx in range(total_samples):
+        file_idx = idx // (chunk_size * seq_divisor)
+        sample_idx = (idx % (chunk_size * seq_divisor)) // seq_divisor
+        seq_idx = (idx % (chunk_size * seq_divisor)) % seq_divisor
+        
+        # Load the appropriate chunk
+        with h5py.File(file_paths[file_idx], 'r') as f:
+            first_key = list(f.keys())[0]  # Get the first dataset key
+            seq_len = f[first_key].shape[1]
+            activation = f[first_key][sample_idx][seq_idx*seq_len//seq_divisor:(seq_idx+1)*seq_len//seq_divisor]
+            
+        # Convert to tensor
+        activation = torch.tensor(activation, dtype=torch.float32)
+        
+        if transform:
+            activation = transform(activation)
+
+        # add 1-like batch dimension
+        activation = activation.unsqueeze(0)
+
+        seq_chrom = seqs_dict[(file_idx, sample_idx)][0][0]
+
+        # map the activation to the sequence coordinates
+        input_seq_chunk = seq_len*resolution//seq_divisor
+        seq_start = seqs_dict[(file_idx, sample_idx)][0][1] + seq_idx*input_seq_chunk
+        seq_end = seqs_dict[(file_idx, sample_idx)][0][1] + (seq_idx+1)*input_seq_chunk
+
+        h_sparse, x_recon = model.infer(activation.to(device))
+
+        # h_sparse is (1 * length, hidden_dim)
+        # for each hidden dimension, get the max 10% activation values and coordinates
+        topk = torch.topk(h_sparse, k=int(top_chunk_pct*hidden_dim), dim=0)
+        values = topk.values # size (k, hidden_dim)
+        indices = topk.indices
+
+        # transpose the values and indices
+        values = values.transpose(0, 1) # size (hidden_dim, k)
+        indices = indices.transpose(0, 1) # size (hidden_dim, k)
+
+        for i in range(values.shape[0]): # i is the hidden node "id"
+            list_nodes.extend([i]*int(top_chunk_pct*hidden_dim))
+            list_acts_vals.extend(list(values[i].cpu().detach().numpy()))
+            for j in range(indices.shape[1]):
+                ind_ = indices[i,j].cpu().detach().numpy()
+                list_seq_coords.append([seq_chrom, seq_start+ind_*resolution, seq_start+(ind_+1)*resolution])
+
+        if idx>100:
+            break
+        
+    df = pd.DataFrame({'node_id': list_nodes, 'activation': list_acts_vals, 'chrom': [x[0] for x in list_seq_coords], 'start': [x[1] for x in list_seq_coords], 'end': [x[2] for x in list_seq_coords]})
+    return df
+            
 
 def train_sparse_autoencoder(
     train_dir: str,
