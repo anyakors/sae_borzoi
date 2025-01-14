@@ -20,7 +20,7 @@ pad = (524288-196608)//2
 if os.path.exists(configs["global_max_save_path"]):
     with open(configs["global_max_save_path"]) as file_open:
         global_max = json.load(file_open)
-    print("Using global max from file:", global_max)
+    print("Using global max from file")
 else:
     global_max = None
 

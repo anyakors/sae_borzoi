@@ -350,7 +350,7 @@ def infer_sparse_autoencoder(
     # Initialize model, optimizer, and loss functions
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = SparseAutoencoder(input_dim, hidden_dim, k, sparsity_method=sparsity_method).to(device)
-    model.load_pretrained(checkpoint_path)
+    model.load_pretrained(str(Path(checkpoint_path) / "best_model.pt"))
     model.eval()
 
     activation_path_pattern = str(Path(activation_path) / "activations_*.h5")
