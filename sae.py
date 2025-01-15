@@ -109,10 +109,12 @@ class SparseAutoencoder(nn.Module):
     def load_pretrained(self, pretrained_path):
         """Load pretrained weights for encoder and decoder"""
         pretrained = torch.load(pretrained_path)
-        self.encoder.load_state_dict(pretrained["model_state_dict"]["encoder"])
-        self.decoder.load_state_dict(pretrained["model_state_dict"]["decoder"])
+
+        self.encoder.weight = pretrained["model_state_dict"]["encoder.weight"]
+        self.decoder.weight = pretrained["model_state_dict"]["decoder.weight"]
         self.pre_bias = nn.Parameter(pretrained["model_state_dict"]["pre_bias"])
         self.latent_bias = nn.Parameter(pretrained["model_state_dict"]["latent_bias"])
+        
 
     def preprocess(self, x: torch.Tensor) -> tuple[torch.Tensor, dict[str, Any]]:
         if not self.normalize:
