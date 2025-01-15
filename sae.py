@@ -12,6 +12,7 @@ from torchvision.transforms import ToTensor
 from dataset import *
 from typing import Callable, Any
 import pandas as pd
+import time
 
 import json
 import os
@@ -382,10 +383,12 @@ def infer_sparse_autoencoder(
     list_seq_coords = []
 
     for idx in tqdm(range(total_samples)):
+        start_time = time.time()
         file_idx = idx // (chunk_size * seq_divisor)
         sample_idx = (idx % (chunk_size * seq_divisor)) // seq_divisor
         seq_idx = (idx % (chunk_size * seq_divisor)) % seq_divisor
         
+        fetch_start_time = time.time()
         # Load the appropriate chunk
         with h5py.File(file_paths[file_idx], 'r') as f:
             first_key = list(f.keys())[0]  # Get the first dataset key
@@ -398,6 +401,9 @@ def infer_sparse_autoencoder(
         if transform:
             activation = transform(activation)
 
+        fetch_end_time = time.time()
+        print(f"Model fetch time for idx {idx}: {fetch_end_time - fetch_start_time:.4f} seconds")
+
         # add 1-like batch dimension
         activation = activation.unsqueeze(0)
 
@@ -408,10 +414,15 @@ def infer_sparse_autoencoder(
         seq_start = seqs_dict[(file_idx, sample_idx)][0][1] + seq_idx*input_seq_chunk
         seq_end = seqs_dict[(file_idx, sample_idx)][0][1] + (seq_idx+1)*input_seq_chunk
 
+        inference_start_time = time.time()
         h_sparse, x_recon = model.infer(activation.to(device))
+        inference_end_time = time.time()
 
+        print(f"Model inference time for idx {idx}: {inference_end_time - inference_start_time:.4f} seconds")
         # h_sparse is (1 * length, hidden_dim)
         # for each hidden dimension, get the max 10% activation values and coordinates
+
+        topk_start_time = time.time()
         topk = torch.topk(h_sparse, k=int(top_chunk_pct*hidden_dim), dim=0)
         values = topk.values # size (k, hidden_dim)
         indices = topk.indices
@@ -426,6 +437,12 @@ def infer_sparse_autoencoder(
             for j in range(indices.shape[1]):
                 ind_ = indices[i,j].cpu().detach().numpy()
                 list_seq_coords.append([seq_chrom, seq_start+ind_*resolution, seq_start+(ind_+1)*resolution])
+
+        topk_end_time = time.time()
+        print(f"Model topk selection time for idx {idx}: {topk_end_time - topk_start_time:.4f} seconds")
+
+        end_time = time.time()
+        print(f"Total time for idx {idx}: {end_time - start_time:.4f} seconds")
 
         if idx>100:
             break
