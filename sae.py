@@ -427,16 +427,20 @@ def infer_sparse_autoencoder(
         values = topk.values # size (k, hidden_dim)
         indices = topk.indices
 
+        ind_save_start_time = time.time()
         # transpose the values and indices
         values = values.transpose(0, 1) # size (hidden_dim, k)
         indices = indices.transpose(0, 1) # size (hidden_dim, k)
 
         for i in range(values.shape[0]): # i is the hidden node "id"
             list_nodes.extend([i]*int(top_chunk_pct*hidden_dim))
-            list_acts_vals.extend(list(values[i].cpu().detach().numpy()))
+            list_acts_vals.extend(list(values[i].tolist()))
             for j in range(indices.shape[1]):
-                ind_ = indices[i,j].cpu().detach().numpy()
+                ind_ = indices[i,j].item()
                 list_seq_coords.append([seq_chrom, seq_start+ind_*resolution, seq_start+(ind_+1)*resolution])
+
+        ind_save_end_time = time.time()
+        print(f"Node indexing time for idx {idx}: {ind_save_end_time - ind_save_start_time:.4f} seconds")
 
         topk_end_time = time.time()
         print(f"Model topk selection time for idx {idx}: {topk_end_time - topk_start_time:.4f} seconds")
