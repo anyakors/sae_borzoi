@@ -381,7 +381,7 @@ def infer_sparse_autoencoder(
     list_acts_vals = []
     list_seq_coords = []
 
-    for idx in range(total_samples):
+    for idx in tqdm(range(total_samples)):
         file_idx = idx // (chunk_size * seq_divisor)
         sample_idx = (idx % (chunk_size * seq_divisor)) // seq_divisor
         seq_idx = (idx % (chunk_size * seq_divisor)) % seq_divisor
