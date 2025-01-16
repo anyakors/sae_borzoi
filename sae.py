@@ -444,12 +444,12 @@ def infer_sparse_autoencoder(
         node_ids = torch.arange(values.shape[0], device=device).repeat_interleave(indices.shape[1])
         activations = values.flatten()
         chroms = [seq_chrom] * (values.shape[0] * indices.shape[1])
-        starts = sequence_positions.flatten().cpu().numpy()
-        ends = sequence_ends.flatten().cpu().numpy()
+        starts = sequence_positions.flatten().cpu().detach().numpy()
+        ends = sequence_ends.flatten().cpu().detach().numpy()
 
         # Extend the lists in bulk
-        list_nodes.extend(node_ids.cpu().numpy())
-        list_acts_vals.extend(activations.cpu().numpy())
+        list_nodes.extend(node_ids.cpu().detach().numpy())
+        list_acts_vals.extend(activations.cpu().detach().numpy())
         list_seq_coords.extend(list(zip(chroms, starts, ends)))
 
         #for i in range(values.shape[0]): # i is the hidden node "id"
