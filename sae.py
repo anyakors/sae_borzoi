@@ -348,7 +348,7 @@ def infer_sparse_autoencoder(
     hidden_dim: int,
     k: int,
     sparsity_method: str = "topk_o",
-    transform=None, resolution=8, pad=163840, top_chunk_pct=0.25):
+    transform=None, resolution=8, pad=163840, top_chunk_pct=0.025):
 
     # Initialize model, optimizer, and loss functions
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -383,6 +383,9 @@ def infer_sparse_autoencoder(
     list_seq_coords = []
 
     for idx in tqdm(range(total_samples)):
+
+        torch.cuda.empty_cache()
+        
         start_time = time.time()
         file_idx = idx // (chunk_size * seq_divisor)
         sample_idx = (idx % (chunk_size * seq_divisor)) // seq_divisor
@@ -423,7 +426,7 @@ def infer_sparse_autoencoder(
         # for each hidden dimension, get the max 10% activation values and coordinates
 
         topk_start_time = time.time()
-        topk = torch.topk(h_sparse, k=int(top_chunk_pct*hidden_dim), dim=0)
+        topk = torch.topk(h_sparse, k=128, dim=0)
         values = topk.values # size (k, hidden_dim)
         indices = topk.indices
 
