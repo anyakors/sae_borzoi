@@ -432,12 +432,32 @@ def infer_sparse_autoencoder(
         values = values.transpose(0, 1) # size (hidden_dim, k)
         indices = indices.transpose(0, 1) # size (hidden_dim, k)
 
-        for i in range(values.shape[0]): # i is the hidden node "id"
-            list_nodes.extend([i]*int(top_chunk_pct*hidden_dim))
-            list_acts_vals.extend(list(values[i].tolist()))
-            for j in range(indices.shape[1]):
-                ind_ = indices[i,j].item()
-                list_seq_coords.append([seq_chrom, seq_start+ind_*resolution, seq_start+(ind_+1)*resolution])
+        # Replace the slow indexing section with this optimized version
+        # This goes inside your infer_sparse_autoencoder function, replacing lines 435-440
+
+        # Get indices for sequence coordinates
+        base_coords = torch.arange(indices.shape[1], device=device)
+        sequence_positions = seq_start + (indices * resolution)
+        sequence_ends = sequence_positions + resolution
+
+        # Create tensors for the repeated values
+        node_ids = torch.arange(values.shape[0], device=device).repeat_interleave(indices.shape[1])
+        activations = values.flatten()
+        chroms = [seq_chrom] * (values.shape[0] * indices.shape[1])
+        starts = sequence_positions.flatten().cpu().numpy()
+        ends = sequence_ends.flatten().cpu().numpy()
+
+        # Extend the lists in bulk
+        list_nodes.extend(node_ids.cpu().numpy())
+        list_acts_vals.extend(activations.cpu().numpy())
+        list_seq_coords.extend(list(zip(chroms, starts, ends)))
+
+        #for i in range(values.shape[0]): # i is the hidden node "id"
+            #list_nodes.extend([i]*int(top_chunk_pct*hidden_dim))
+            #list_acts_vals.extend(list(values[i].tolist()))
+            #for j in range(indices.shape[1]):
+                #ind_ = indices[i,j].item()
+                #list_seq_coords.append([seq_chrom, seq_start+ind_*resolution, seq_start+(ind_+1)*resolution])
 
         ind_save_end_time = time.time()
         print(f"Node indexing time for idx {idx}: {ind_save_end_time - ind_save_start_time:.4f} seconds")
