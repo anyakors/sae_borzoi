@@ -348,7 +348,7 @@ def infer_sparse_autoencoder(
     hidden_dim: int,
     k: int,
     sparsity_method: str = "topk_o",
-    transform=None, resolution=8, pad=163840, top_chunk_pct=0.025):
+    transform=None, resolution=8, pad=163840, top_chunk_num=64):
 
     # Initialize model, optimizer, and loss functions
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -405,7 +405,7 @@ def infer_sparse_autoencoder(
             activation = transform(activation)
 
         fetch_end_time = time.time()
-        print(f"Model fetch time for idx {idx}: {fetch_end_time - fetch_start_time:.4f} seconds")
+        #print(f"Model fetch time for idx {idx}: {fetch_end_time - fetch_start_time:.4f} seconds")
 
         # add 1-like batch dimension
         activation = activation.unsqueeze(0)
@@ -421,12 +421,12 @@ def infer_sparse_autoencoder(
         h_sparse, x_recon = model.infer(activation.to(device))
         inference_end_time = time.time()
 
-        print(f"Model inference time for idx {idx}: {inference_end_time - inference_start_time:.4f} seconds")
+        #print(f"Model inference time for idx {idx}: {inference_end_time - inference_start_time:.4f} seconds")
         # h_sparse is (1 * length, hidden_dim)
         # for each hidden dimension, get the max 10% activation values and coordinates
 
         topk_start_time = time.time()
-        topk = torch.topk(h_sparse, k=128, dim=0)
+        topk = torch.topk(h_sparse, k=top_chunk_num, dim=0)
         values = topk.values # size (k, hidden_dim)
         indices = topk.indices
 
@@ -463,15 +463,15 @@ def infer_sparse_autoencoder(
                 #list_seq_coords.append([seq_chrom, seq_start+ind_*resolution, seq_start+(ind_+1)*resolution])
 
         ind_save_end_time = time.time()
-        print(f"Node indexing time for idx {idx}: {ind_save_end_time - ind_save_start_time:.4f} seconds")
+        #print(f"Node indexing time for idx {idx}: {ind_save_end_time - ind_save_start_time:.4f} seconds")
 
         topk_end_time = time.time()
-        print(f"Model topk selection time for idx {idx}: {topk_end_time - topk_start_time:.4f} seconds")
+        #print(f"Model topk selection time for idx {idx}: {topk_end_time - topk_start_time:.4f} seconds")
 
         end_time = time.time()
-        print(f"Total time for idx {idx}: {end_time - start_time:.4f} seconds")
+        #print(f"Total time for idx {idx}: {end_time - start_time:.4f} seconds")
 
-        if idx>10:
+        if idx>1000:
             break
         
     df = pd.DataFrame({'node_id': list_nodes, 'activation': list_acts_vals, 'chrom': [x[0] for x in list_seq_coords], 'start': [x[1] for x in list_seq_coords], 'end': [x[2] for x in list_seq_coords]})
