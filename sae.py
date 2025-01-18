@@ -471,7 +471,7 @@ def infer_sparse_autoencoder(
         end_time = time.time()
         #print(f"Total time for idx {idx}: {end_time - start_time:.4f} seconds")
 
-        if idx>300:
+        if idx>400:
             break
         
     df = pd.DataFrame({'node_id': list_nodes, 'activation': list_acts_vals, 'chrom': [x[0] for x in list_seq_coords], 'start': [x[1] for x in list_seq_coords], 'end': [x[2] for x in list_seq_coords]})
