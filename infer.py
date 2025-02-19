@@ -25,7 +25,7 @@ else:
     global_max = None
 
 # Save results to CSV
-results_df = infer_sparse_autoencoder(
+infer_sparse_autoencoder(
     configs['model_save_path'],
     activations_path,
     configs["input_channels"],
