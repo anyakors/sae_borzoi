@@ -34,6 +34,4 @@ results_df = infer_sparse_autoencoder(
     transform=NormalizeActivations(global_max=global_max), 
     resolution=524288//configs["seq_len"], 
     pad=pad, 
-    top_chunk_num=16)
-
-results_df.to_csv(os.path.join(configs['model_save_path'], 'strongest_activations.csv'))
+    top_chunk_num=32)

@@ -381,6 +381,7 @@ def infer_sparse_autoencoder(
     list_nodes = []
     list_acts_vals = []
     list_seq_coords = []
+    current_file_idx = 0
 
     for idx in tqdm(range(total_samples)):
 
@@ -471,11 +472,18 @@ def infer_sparse_autoencoder(
         end_time = time.time()
         #print(f"Total time for idx {idx}: {end_time - start_time:.4f} seconds")
 
-        if idx>400:
+        if idx % 200 == 0 and idx != 0:
+            df = pd.DataFrame({'node_id': list_nodes, 'activation': list_acts_vals, 'chrom': [x[0] for x in list_seq_coords], 'start': [x[1] for x in list_seq_coords], 'end': [x[2] for x in list_seq_coords]})
+            df.to_csv(os.path.join(checkpoint_path, f'strongest_activations_{current_file_idx}.csv'))
+            list_nodes = []
+            list_acts_vals = []
+            list_seq_coords = []
+            current_file_idx += 1
+
+        if current_file_idx > 25:
             break
-        
-    df = pd.DataFrame({'node_id': list_nodes, 'activation': list_acts_vals, 'chrom': [x[0] for x in list_seq_coords], 'start': [x[1] for x in list_seq_coords], 'end': [x[2] for x in list_seq_coords]})
-    return df
+
+    return
             
 
 def train_sparse_autoencoder(

@@ -1,0 +1,328 @@
+ conv1d_1 (Conv1D)              (None, 262144, 608)  1557088     ['tf.nn.gelu[0][0]']                                                                            
+                                                                                                                                                                 
+ max_pooling1d_1 (MaxPooling1D)  (None, 131072, 608)  0          ['conv1d_1[0][0]']                                                                              
+                                                                                                                                                                 
+ batch_normalization_1 (BatchNo  (None, 131072, 608)  2432       ['max_pooling1d_1[0][0]']                                                                       
+ rmalization)                                                                                                                                                    
+                                                                                                                                                                 
+ tf.nn.gelu_1 (TFOpLambda)      (None, 131072, 608)  0           ['batch_normalization_1[0][0]']                                                                 
+                                                                                                                                                                 
+ conv1d_2 (Conv1D)              (None, 131072, 736)  2238176     ['tf.nn.gelu_1[0][0]']           
+                                                                                                   
+ max_pooling1d_2 (MaxPooling1D)  (None, 65536, 736)  0           ['conv1d_2[0][0]']               
+                                                                                                   
+ batch_normalization_2 (BatchNo  (None, 65536, 736)  2944        ['max_pooling1d_2[0][0]']        
+ rmalization)                                                                                      
+                                                                                                   
+ tf.nn.gelu_2 (TFOpLambda)      (None, 65536, 736)   0           ['batch_normalization_2[0][0]']  
+                                                                                                   
+ conv1d_3 (Conv1D)              (None, 65536, 896)   3298176     ['tf.nn.gelu_2[0][0]']           
+                                                                                                   
+ max_pooling1d_3 (MaxPooling1D)  (None, 32768, 896)  0           ['conv1d_3[0][0]']               
+                                                                                                   
+ batch_normalization_3 (BatchNo  (None, 32768, 896)  3584        ['max_pooling1d_3[0][0]']        
+ rmalization)                                                                                      
+                                                                                                   
+ tf.nn.gelu_3 (TFOpLambda)      (None, 32768, 896)   0           ['batch_normalization_3[0][0]']  
+                                                                                                   
+ conv1d_4 (Conv1D)              (None, 32768, 1056)  4731936     ['tf.nn.gelu_3[0][0]']           
+                                                                                                   
+ max_pooling1d_4 (MaxPooling1D)  (None, 16384, 1056)  0          ['conv1d_4[0][0]']               
+                                                                                                   
+ batch_normalization_4 (BatchNo  (None, 16384, 1056)  4224       ['max_pooling1d_4[0][0]']        
+ rmalization)                                                                                      
+                                                                                                   
+ tf.nn.gelu_4 (TFOpLambda)      (None, 16384, 1056)  0           ['batch_normalization_4[0][0]']  
+                                                                                                   
+ conv1d_5 (Conv1D)              (None, 16384, 1280)  6759680     ['tf.nn.gelu_4[0][0]']   
+
+  max_pooling1d_5 (MaxPooling1D)  (None, 8192, 1280)  0           ['conv1d_5[0][0]']               
+                                                                                                   
+ batch_normalization_5 (BatchNo  (None, 8192, 1280)  5120        ['max_pooling1d_5[0][0]']        
+ rmalization)                                                                                      
+                                                                                                   
+ tf.nn.gelu_5 (TFOpLambda)      (None, 8192, 1280)   0           ['batch_normalization_5[0][0]']  
+                                                                                                   
+ conv1d_6 (Conv1D)              (None, 8192, 1536)   9831936     ['tf.nn.gelu_5[0][0]']           
+                                                                                                   
+ max_pooling1d_6 (MaxPooling1D)  (None, 4096, 1536)  0           ['conv1d_6[0][0]']               
+                                                                                                   
+ layer_normalization (LayerNorm  (None, 4096, 1536)  3072        ['max_pooling1d_6[0][0]']        
+ alization)                                                                                        
+                                                                                                   
+ multihead_attention (Multihead  (None, 4096, 1536)  6310400     ['layer_normalization[0][0]']    
+ Attention)                                                                                        
+                                                                                                   
+ dropout (Dropout)              (None, 4096, 1536)   0           ['multihead_attention[0][0]']    
+                                                                                                   
+ add (Add)                      (None, 4096, 1536)   0           ['max_pooling1d_6[0][0]',        
+                                                                  'dropout[0][0]']                
+                                                                                                   
+ layer_normalization_1 (LayerNo  (None, 4096, 1536)  3072        ['add[0][0]']                     
+ rmalization)                                                                                      
+                                                                                                   
+ dense (Dense)                  (None, 4096, 3072)   4721664     ['layer_normalization_1[0][0]']  
+                                                                                                   
+ dropout_1 (Dropout)            (None, 4096, 3072)   0           ['dense[0][0]']                   
+                                                                                           
+ re_lu (ReLU)                   (None, 4096, 3072)   0           ['dropout_1[0][0]']              
+                                                                                                   
+ dense_1 (Dense)                (None, 4096, 1536)   4720128     ['re_lu[0][0]']                   
+                                                                                                   
+ dropout_2 (Dropout)            (None, 4096, 1536)   0           ['dense_1[0][0]']                
+                                                                                                   
+ add_1 (Add)                    (None, 4096, 1536)   0           ['add[0][0]',                     
+                                                                  'dropout_2[0][0]']              
+                                                                                                   
+ layer_normalization_2 (LayerNo  (None, 4096, 1536)  3072        ['add_1[0][0]']                   
+ rmalization)                                                                                      
+                                                                                                   
+ multihead_attention_1 (Multihe  (None, 4096, 1536)  6310400     ['layer_normalization_2[0][0]']  
+ adAttention)                                                                                      
+                                                                                                   
+ dropout_3 (Dropout)            (None, 4096, 1536)   0           ['multihead_attention_1[0][0]']  
+                                                                                                   
+ add_2 (Add)                    (None, 4096, 1536)   0           ['add_1[0][0]',                   
+                                                                  'dropout_3[0][0]']              
+                                                                                                   
+ layer_normalization_3 (LayerNo  (None, 4096, 1536)  3072        ['add_2[0][0]']                   
+ rmalization)                                                                                      
+                                                                                                   
+ dense_2 (Dense)                (None, 4096, 3072)   4721664     ['layer_normalization_3[0][0]']  
+                                                                                                   
+ dropout_4 (Dropout)            (None, 4096, 3072)   0           ['dense_2[0][0]']                
+                                                                                                   
+ re_lu_1 (ReLU)                 (None, 4096, 3072)   0           ['dropout_4[0][0]']              
+                                                                                                   
+ dense_3 (Dense)                (None, 4096, 1536)   4720128     ['re_lu_1[0][0]']                
+                                                                                                   
+ dropout_5 (Dropout)            (None, 4096, 1536)   0           ['dense_3[0][0]']                
+                                                                                                   
+ add_3 (Add)                    (None, 4096, 1536)   0           ['add_2[0][0]',                   
+                                                                  'dropout_5[0][0]']            
+
+ layer_normalization_4 (LayerNo  (None, 4096, 1536)  3072        ['add_3[0][0]']                   
+ rmalization)                                                                                      
+                                                                                                   
+ multihead_attention_2 (Multihe  (None, 4096, 1536)  6310400     ['layer_normalization_4[0][0]']  
+ adAttention)                                                                                      
+                                                                                                   
+ dropout_6 (Dropout)            (None, 4096, 1536)   0           ['multihead_attention_2[0][0]']  
+                                                                                                   
+ add_4 (Add)                    (None, 4096, 1536)   0           ['add_3[0][0]',                   
+                                                                  'dropout_6[0][0]']              
+                                                                                                   
+ layer_normalization_5 (LayerNo  (None, 4096, 1536)  3072        ['add_4[0][0]']                   
+ rmalization)                                                                                      
+                                                                                                   
+ dense_4 (Dense)                (None, 4096, 3072)   4721664     ['layer_normalization_5[0][0]']  
+                                                                                                   
+ dropout_7 (Dropout)            (None, 4096, 3072)   0           ['dense_4[0][0]']                
+                                                                                                   
+ re_lu_2 (ReLU)                 (None, 4096, 3072)   0           ['dropout_7[0][0]']              
+                                                                                                   
+ dense_5 (Dense)                (None, 4096, 1536)   4720128     ['re_lu_2[0][0]']                
+                                                                                                   
+ dropout_8 (Dropout)            (None, 4096, 1536)   0           ['dense_5[0][0]']                
+                                                                                                   
+ add_5 (Add)                    (None, 4096, 1536)   0           ['add_4[0][0]',                   
+                                                                  'dropout_8[0][0]']              
+                                                                                                   
+ layer_normalization_6 (LayerNo  (None, 4096, 1536)  3072        ['add_5[0][0]']                   
+ rmalization)                                                                                      
+                                                                                                   
+ multihead_attention_3 (Multihe  (None, 4096, 1536)  6310400     ['layer_normalization_6[0][0]']  
+ adAttention)                                                                                      
+                                                                                                   
+ dropout_9 (Dropout)            (None, 4096, 1536)   0           ['multihead_attention_3[0][0]']  
+                                                                                                   
+ add_6 (Add)                    (None, 4096, 1536)   0           ['add_5[0][0]',                   
+                                                                  'dropout_9[0][0]']              
+                                                                                                   
+ layer_normalization_7 (LayerNo  (None, 4096, 1536)  3072        ['add_6[0][0]']                   
+ rmalization)                                                                           
+
+  dense_6 (Dense)                (None, 4096, 3072)   4721664     ['layer_normalization_7[0][0]']  
+                                                                                                   
+ dropout_10 (Dropout)           (None, 4096, 3072)   0           ['dense_6[0][0]']                
+                                                                                                   
+ re_lu_3 (ReLU)                 (None, 4096, 3072)   0           ['dropout_10[0][0]']             
+                                                                                                   
+ dense_7 (Dense)                (None, 4096, 1536)   4720128     ['re_lu_3[0][0]']                
+                                                                                                   
+ dropout_11 (Dropout)           (None, 4096, 1536)   0           ['dense_7[0][0]']                
+                                                                                                   
+ add_7 (Add)                    (None, 4096, 1536)   0           ['add_6[0][0]',                   
+                                                                  'dropout_11[0][0]']             
+                                                                                                   
+ layer_normalization_8 (LayerNo  (None, 4096, 1536)  3072        ['add_7[0][0]']                   
+ rmalization)                                                                                      
+                                                                                                   
+ multihead_attention_4 (Multihe  (None, 4096, 1536)  6310400     ['layer_normalization_8[0][0]']  
+ adAttention)                                                                                      
+                                                                                                   
+ dropout_12 (Dropout)           (None, 4096, 1536)   0           ['multihead_attention_4[0][0]']  
+                                                                                                   
+ add_8 (Add)                    (None, 4096, 1536)   0           ['add_7[0][0]',                   
+                                                                  'dropout_12[0][0]']             
+                                                                                                   
+ layer_normalization_9 (LayerNo  (None, 4096, 1536)  3072        ['add_8[0][0]']                   
+ rmalization)                                                                                      
+                                                                                                   
+ dense_8 (Dense)                (None, 4096, 3072)   4721664     ['layer_normalization_9[0][0]']  
+                                                                                                   
+ dropout_13 (Dropout)           (None, 4096, 3072)   0           ['dense_8[0][0]']                
+                                                                                                   
+ re_lu_4 (ReLU)                 (None, 4096, 3072)   0           ['dropout_13[0][0]']             
+                                                                                                   
+ dense_9 (Dense)                (None, 4096, 1536)   4720128     ['re_lu_4[0][0]']                
+                                                                                                   
+ dropout_14 (Dropout)           (None, 4096, 1536)   0           ['dense_9[0][0]']                
+                                                                                                   
+ add_9 (Add)                    (None, 4096, 1536)   0           ['add_8[0][0]',                   
+                                                                  'dropout_14[0][0]']   
+
+ layer_normalization_10 (LayerN  (None, 4096, 1536)  3072        ['add_9[0][0]']                   
+ ormalization)                                                                                     
+                                                                                                   
+ multihead_attention_5 (Multihe  (None, 4096, 1536)  6310400     ['layer_normalization_10[0][0]'] 
+ adAttention)                                                                                      
+                                                                                                   
+ dropout_15 (Dropout)           (None, 4096, 1536)   0           ['multihead_attention_5[0][0]']  
+                                                                                                   
+ add_10 (Add)                   (None, 4096, 1536)   0           ['add_9[0][0]',                   
+                                                                  'dropout_15[0][0]']             
+                                                                                                   
+ layer_normalization_11 (LayerN  (None, 4096, 1536)  3072        ['add_10[0][0]']                 
+ ormalization)                                                                                     
+                                                                                                   
+ dense_10 (Dense)               (None, 4096, 3072)   4721664     ['layer_normalization_11[0][0]'] 
+                                                                                                   
+ dropout_16 (Dropout)           (None, 4096, 3072)   0           ['dense_10[0][0]']               
+                                                                                                   
+ re_lu_5 (ReLU)                 (None, 4096, 3072)   0           ['dropout_16[0][0]']             
+                                                                                                   
+ dense_11 (Dense)               (None, 4096, 1536)   4720128     ['re_lu_5[0][0]']                
+                                                                                                   
+ dropout_17 (Dropout)           (None, 4096, 1536)   0           ['dense_11[0][0]']               
+                                                                                                   
+ add_11 (Add)                   (None, 4096, 1536)   0           ['add_10[0][0]',                 
+                                                                  'dropout_17[0][0]']             
+                                                                                                   
+ layer_normalization_12 (LayerN  (None, 4096, 1536)  3072        ['add_11[0][0]']                 
+ ormalization)                                                                                     
+                                                                                                   
+ multihead_attention_6 (Multihe  (None, 4096, 1536)  6310400     ['layer_normalization_12[0][0]'] 
+ adAttention)                                                                                      
+                                                                                                   
+ dropout_18 (Dropout)           (None, 4096, 1536)   0           ['multihead_attention_6[0][0]']  
+                                                                                                   
+ add_12 (Add)                   (None, 4096, 1536)   0           ['add_11[0][0]',                 
+                                                                  'dropout_18[0][0]']             
+                                                                                                   
+ layer_normalization_13 (LayerN  (None, 4096, 1536)  3072        ['add_12[0][0]']                 
+ ormalization)                                                                         
+
+  dense_12 (Dense)               (None, 4096, 3072)   4721664     ['layer_normalization_13[0][0]'] 
+                                                                                                   
+ dropout_19 (Dropout)           (None, 4096, 3072)   0           ['dense_12[0][0]']               
+                                                                                                   
+ re_lu_6 (ReLU)                 (None, 4096, 3072)   0           ['dropout_19[0][0]']             
+                                                                                                   
+ dense_13 (Dense)               (None, 4096, 1536)   4720128     ['re_lu_6[0][0]']                
+                                                                                                   
+ dropout_20 (Dropout)           (None, 4096, 1536)   0           ['dense_13[0][0]']               
+                                                                                                   
+ add_13 (Add)                   (None, 4096, 1536)   0           ['add_12[0][0]',                 
+                                                                  'dropout_20[0][0]']             
+                                                                                                   
+ layer_normalization_14 (LayerN  (None, 4096, 1536)  3072        ['add_13[0][0]']                 
+ ormalization)                                                                                     
+                                                                                                   
+ multihead_attention_7 (Multihe  (None, 4096, 1536)  6310400     ['layer_normalization_14[0][0]'] 
+ adAttention)                                                                                      
+                                                                                                   
+ dropout_21 (Dropout)           (None, 4096, 1536)   0           ['multihead_attention_7[0][0]']  
+                                                                                                   
+ add_14 (Add)                   (None, 4096, 1536)   0           ['add_13[0][0]',                 
+                                                                  'dropout_21[0][0]']             
+                                                                                                   
+ layer_normalization_15 (LayerN  (None, 4096, 1536)  3072        ['add_14[0][0]']                 
+ ormalization)                                                                                     
+                                                                                                   
+ dense_14 (Dense)               (None, 4096, 3072)   4721664     ['layer_normalization_15[0][0]'] 
+                                                                                                   
+ dropout_22 (Dropout)           (None, 4096, 3072)   0           ['dense_14[0][0]']               
+                                                                                                   
+ re_lu_7 (ReLU)                 (None, 4096, 3072)   0           ['dropout_22[0][0]']             
+                                                                                                   
+ dense_15 (Dense)               (None, 4096, 1536)   4720128     ['re_lu_7[0][0]']                
+                                                                                                   
+ dropout_23 (Dropout)           (None, 4096, 1536)   0           ['dense_15[0][0]']               
+                                                                                                   
+ add_15 (Add)                   (None, 4096, 1536)   0           ['add_14[0][0]',                 
+                                                                  'dropout_23[0][0]']  
+
+ batch_normalization_6 (BatchNo  (None, 4096, 1536)  6144        ['add_15[0][0]']                 
+ rmalization)                                                                                      
+                                                                                                   
+ tf.nn.gelu_6 (TFOpLambda)      (None, 4096, 1536)   0           ['batch_normalization_6[0][0]']  
+                                                                                                   
+ batch_normalization_7 (BatchNo  (None, 8192, 1536)  6144        ['conv1d_6[0][0]']               
+ rmalization)                                                                                      
+                                                                                                   
+ dense_16 (Dense)               (None, 4096, 1536)   2360832     ['tf.nn.gelu_6[0][0]']           
+                                                                                                   
+ tf.nn.gelu_7 (TFOpLambda)      (None, 8192, 1536)   0           ['batch_normalization_7[0][0]']  
+                                                                                                   
+ up_sampling1d (UpSampling1D)   (None, 8192, 1536)   0           ['dense_16[0][0]']               
+                                                                                                   
+ dense_17 (Dense)               (None, 8192, 1536)   2360832     ['tf.nn.gelu_7[0][0]']           
+                                                                                                   
+ add_16 (Add)                   (None, 8192, 1536)   0           ['up_sampling1d[0][0]',          
+                                                                  'dense_17[0][0]']               
+                                                                                                   
+ separable_conv1d (SeparableCon  (None, 8192, 1536)  2365440     ['add_16[0][0]']                 
+ v1D)                                                                                              
+                                                                                                   
+ batch_normalization_8 (BatchNo  (None, 8192, 1536)  6144        ['separable_conv1d[0][0]']       
+ rmalization)                                                                                      
+                                                                                                   
+ tf.nn.gelu_8 (TFOpLambda)      (None, 8192, 1536)   0           ['batch_normalization_8[0][0]']  
+                                                                                                   
+ batch_normalization_9 (BatchNo  (None, 16384, 1280)  5120       ['conv1d_5[0][0]']               
+ rmalization)                                                                                      
+                                                                                                   
+ dense_18 (Dense)               (None, 8192, 1536)   2360832     ['tf.nn.gelu_8[0][0]']           
+                                                                                                   
+ tf.nn.gelu_9 (TFOpLambda)      (None, 16384, 1280)  0           ['batch_normalization_9[0][0]']  
+                                                                                                   
+ up_sampling1d_1 (UpSampling1D)  (None, 16384, 1536)  0          ['dense_18[0][0]']               
+                                                                                                   
+ dense_19 (Dense)               (None, 16384, 1536)  1967616     ['tf.nn.gelu_9[0][0]']           
+                                                                                                   
+ add_17 (Add)                   (None, 16384, 1536)  0           ['up_sampling1d_1[0][0]',        
+                                                                  'dense_19[0][0]']               
+                                                                                                   
+ separable_conv1d_1 (SeparableC  (None, 16384, 1536)  2365440    ['add_17[0][0]']                 
+ onv1D)                                                                                            
+                                                                                                   
+ cropping1d (Cropping1D)        (None, 6144, 1536)   0           ['separable_conv1d_1[0][0]']     
+                                                                                                   
+ batch_normalization_10 (BatchN  (None, 6144, 1536)  6144        ['cropping1d[0][0]']             
+ ormalization)                                                                                     
+                                                                                                   
+ tf.nn.gelu_10 (TFOpLambda)     (None, 6144, 1536)   0           ['batch_normalization_10[0][0]'] 
+                                                                                                   
+ conv1d_7 (Conv1D)              (None, 6144, 1920)   2951040     ['tf.nn.gelu_10[0][0]']          
+                                                                                                   
+ dropout_24 (Dropout)           (None, 6144, 1920)   0           ['conv1d_7[0][0]']               
+                                                                                                   
+ tf.nn.gelu_11 (TFOpLambda)     (None, 6144, 1920)   0           ['dropout_24[0][0]']             
+                                                                                                   
+ dense_20 (Dense)               (None, 6144, 7611)   14620731    ['tf.nn.gelu_11[0][0]']          
+                                                                                                   
+ switch_reverse (SwitchReverse)  (None, 6144, 7611)  0           ['dense_20[0][0]',               
+                                                                  'stochastic_reverse_complement[0
+                                                                 ][1]']   
+                                                                                                   
