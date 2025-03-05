@@ -44,4 +44,6 @@ for exp_factor in params['expansion_factors']:
 
             # run with subprocess
             subprocess.run(['sbatch', f'temp/job_{exp_factor}_topk{topk}_lr{lr}.sb'])
+
+            break
             

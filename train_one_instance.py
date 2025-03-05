@@ -22,9 +22,10 @@ with open(config_file) as config_open:
 
 # Example usage
 input_dim = configs["input_channels"]  # Your activation dimension
-hidden_dim = args.exp_factor * configs["input_channels"]  # Desired hidden layer dimension
-k = int(args.topk * configs["input_channels"]) # Number of top activations to keep
-learning_rate = args.lr
+hidden_dim = int(args.exp_factor) * configs["input_channels"]  # Desired hidden layer dimension
+print("args:", args.topk, args.exp_factor, args.lr)
+k = float(args.topk) * int(configs["input_channels"]) # Number of top activations to keep
+learning_rate = float(args.lr)
 sparsity_target = configs["sparsity_target"]
 
 model_save_path = f"models/{configs['layer_name']}_noabs_{args.exp_factor}_topk{args.topk}_lr{args.lr}"
