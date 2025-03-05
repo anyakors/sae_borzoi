@@ -9,9 +9,9 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--topk', help='topk', default=0.1)
-parser.add_argument('--exp_factor', help='expansion_factor', default=16)
-parser.add_argument('--lr', help='learning_rate', default=1e-5)
+parser.add_argument('--topk', help='topk', type=float, default=0.1)
+parser.add_argument('--exp_factor', help='expansion_factor', type=int, default=16)
+parser.add_argument('--lr', help='learning_rate', type=float, default=1e-5)
 
 args = parser.parse_args()
 
@@ -22,10 +22,10 @@ with open(config_file) as config_open:
 
 # Example usage
 input_dim = configs["input_channels"]  # Your activation dimension
-hidden_dim = int(args.exp_factor) * configs["input_channels"]  # Desired hidden layer dimension
+hidden_dim = args.exp_factor * configs["input_channels"]  # Desired hidden layer dimension
 print("args:", args.topk, args.exp_factor, args.lr)
-k = float(args.topk) * int(configs["input_channels"]) # Number of top activations to keep
-learning_rate = float(args.lr)
+k = int(args.topk * configs["input_channels"]) # Number of top activations to keep
+learning_rate = args.lr
 sparsity_target = configs["sparsity_target"]
 
 model_save_path = f"models/{configs['layer_name']}_noabs_{args.exp_factor}_topk{args.topk}_lr{args.lr}"
