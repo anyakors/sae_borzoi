@@ -98,6 +98,8 @@ class SparseAutoencoder(nn.Module):
         self.sparsity_method = sparsity_method
         self.normalize = normalize
 
+        self.activation = nn.ReLU()
+
         self.encoder = nn.Linear(input_dim, hidden_dim, bias=False)
         self.decoder = nn.Linear(hidden_dim, input_dim, bias=False)
 
@@ -138,9 +140,11 @@ class SparseAutoencoder(nn.Module):
         """Apply sparsity using the selected method"""
         if self.sparsity_method == "topk":
             # Hard top-k selection
-            topk_values, _ = torch.topk(h.abs(), k=self.k, dim=1)
+            # topk_values, _ = torch.topk(h.abs(), k=self.k, dim=1)
+            topk_values, _ = torch.topk(h, k=self.k, dim=1) # no abs
             threshold = topk_values[:, -1].unsqueeze(1)
-            return h * (h.abs() >= threshold)
+            # return h * (h.abs() >= threshold)
+            return h * (h >= threshold)
 
         if self.sparsity_method == "topk_o":
             topk = torch.topk(h, k=self.k, dim=-1)
@@ -198,6 +202,7 @@ class SparseAutoencoder(nn.Module):
         x = x.view(-1, x.size(-1))
 
         h, params = self.encode(x) # (batch_size * length, hidden_dim)
+        h = self.activation(h)
 
         h_sparse = self.get_sparse_activations(h) # (batch_size * length, hidden_dim)
 
