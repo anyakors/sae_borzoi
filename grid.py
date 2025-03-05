@@ -30,10 +30,10 @@ for exp_factor in params['expansion_factors']:
 
             slurm_string = '#!/bin/bash \n \n'
             slurm_string += '#SBATCH -p minigpu \n \n'
-            slurm_string += '#SBATCH -n 1 \n #SBATCH -c 2 \n #SBATCH -J sae-borzoi \n'
-            slurm_string += f"#SBATCH -o /home/anya/code/sae_torch/{model_save_path}/job0.out \n"
-            slurm_string += f"#SBATCH -e /home/anya/code/sae_torch/{model_save_path}/job0.err \n"
-            slurm_string += '#SBATCH --mem 28000 \n #SBATCH --time 2-0:0:0 \n'
+            slurm_string += '#SBATCH -n 1 \n#SBATCH -c 2 \n#SBATCH -J sae-borzoi \n'
+            slurm_string += f"#SBATCH -o /home/anya/code/sae_borzoi/{model_save_path}/job0.out \n"
+            slurm_string += f"#SBATCH -e /home/anya/code/sae_borzoi/{model_save_path}/job0.err \n"
+            slurm_string += '#SBATCH --mem 28000 \n#SBATCH --time 2-0:0:0 \n'
             slurm_string += '#SBATCH --gres=gpu:1 \n'  # Request 1 GPU
             slurm_string += f'. /home/anya/anaconda3/etc/profile.d/conda.sh; conda activate basenji-torch2; echo $HOSTNAME; python train_one_instance.py --topk {topk} --exp_factor {exp_factor} --lr {lr}'
 
