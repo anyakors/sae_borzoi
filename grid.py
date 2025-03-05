@@ -13,7 +13,7 @@ params_file = "params_grid.json"
 with open(params_file) as params_open:
     params = json.load(params_open)
 
-config_file = "configs.json"
+config_file = "config.json"
 with open(config_file) as configs_open:
     configs = json.load(configs_open)
 
