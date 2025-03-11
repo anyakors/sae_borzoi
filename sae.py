@@ -353,7 +353,7 @@ def infer_sparse_autoencoder(
     hidden_dim: int,
     k: int,
     sparsity_method: str = "topk_o",
-    transform=None, resolution=8, pad=163840, top_chunk_num=64):
+    transform=None, resolution=8, pad=163840, top_chunk_num=16):
 
     # Initialize model, optimizer, and loss functions
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -485,7 +485,7 @@ def infer_sparse_autoencoder(
             list_seq_coords = []
             current_file_idx += 1
 
-        if current_file_idx > 25:
+        if current_file_idx >= 9:
             break
 
     return
