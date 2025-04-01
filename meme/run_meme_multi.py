@@ -30,10 +30,10 @@ for im,model_folder in enumerate(model_folders):
     slurm_string = '#!/bin/bash \n \n'
     slurm_string += '#SBATCH -p standard \n \n'
     slurm_string += '#SBATCH -n 1 \n#SBATCH -c 2 \n#SBATCH -J meme \n'
-    slurm_string += f"#SBATCH -o /home/anya/code/sae_borzoi/models/{model_folder}/job0_infer.out \n"
-    slurm_string += f"#SBATCH -e /home/anya/code/sae_borzoi/models/{model_folder}/job0_infer.err \n"
+    slurm_string += f"#SBATCH -o temp/job_{im}.out \n"
+    slurm_string += f"#SBATCH -e temp/job_{im}.err \n"
     slurm_string += '#SBATCH --mem 22000 \n#SBATCH --time 2-0:0:0 \n'
-    slurm_string += f'source /home/anya/.bashrc; echo $HOSTNAME; python meme-analysis.sh /home/anya/code/sae_borzoi/models/{model_folder}'
+    slurm_string += f'source /home/anya/.bashrc; echo $HOSTNAME; meme-analysis.sh /home/anya/code/sae_borzoi/models/{model_folder}'
 
     with open(f'temp/job_{im}.sb', 'w') as f:
         f.write(slurm_string)
