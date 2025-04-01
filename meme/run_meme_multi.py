@@ -28,7 +28,7 @@ for im,model_folder in enumerate(model_folders):
     model_path = f"/home/anya/code/sae_borzoi/models/{model_folder}"
 
     slurm_string = '#!/bin/bash \n \n'
-    slurm_string += '#SBATCH -p cpu \n \n'
+    slurm_string += '#SBATCH -p standard \n \n'
     slurm_string += '#SBATCH -n 1 \n#SBATCH -c 2 \n#SBATCH -J meme \n'
     slurm_string += f"#SBATCH -o /home/anya/code/sae_borzoi/models/{model_folder}/job0_infer.out \n"
     slurm_string += f"#SBATCH -e /home/anya/code/sae_borzoi/models/{model_folder}/job0_infer.err \n"
