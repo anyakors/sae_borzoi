@@ -29,7 +29,7 @@ check_command "${MEME_INSTALL_DIR}/src/meme"
 check_command "${MEME_INSTALL_DIR}/src/tomtom"
 
 # Process each .fa file in the input directory
-for fa_file in "${INPUT_DIR}"/*.fa; do
+for fa_file in "${INPUT_DIR}"/node_seqs_sorted/*.fa; do
     if [ -f "$fa_file" ]; then
         filename=$(basename "$fa_file" .fa)
         echo "Processing $filename..."
@@ -74,7 +74,7 @@ Date: $(date)
 Input Directory: ${INPUT_DIR}
 
 Processed Files:
-$(ls -1 "${INPUT_DIR}"/*.fa)
+$(ls -1 "${INPUT_DIR}"/node_seqs_sorted/*.fa)
 
 Results Location:
 MEME results: ${OUTPUT_DIR}/${DATE_STAMP}/meme_out/
