@@ -8,7 +8,7 @@ if [ $# -ne 1 ]; then
 fi
 
 INPUT_DIR="$1"
-OUTPUT_DIR="meme_analysis_results"
+OUTPUT_DIR="${INPUT_DIR}/meme_analysis_results"
 DATE_STAMP=$(date +%Y%m%d_%H%M%S)
 MEME_INSTALL_DIR="/home/anya/code/meme-5.4.1"
 
