@@ -27,5 +27,5 @@ for im,model_folder in enumerate(model_folders):
         f.write(slurm_string)
 
     # run with subprocess
-    subprocess.run(['sbatch', f'temp/job_{im}.sb'])
+    subprocess.run(['sbatch', f'meme/temp/job_{im}.sb'])
     
