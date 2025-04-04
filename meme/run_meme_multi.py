@@ -2,30 +2,17 @@ import os
 import subprocess
 
 
-model_folders = ["conv1d_2_noabs_16_topk0.05_lr0.0001",
-"conv1d_2_noabs_16_topk0.05_lr1e-05",
-"conv1d_2_noabs_16_topk0.05_lr1e-06",
-"conv1d_2_noabs_16_topk0.1_lr0.0001",
-"conv1d_2_noabs_16_topk0.1_lr1e-05",
-"conv1d_2_noabs_16_topk0.1_lr1e-06",
-"conv1d_2_noabs_16_topk0.2_lr0.0001",
-"conv1d_2_noabs_16_topk0.2_lr1e-05",
-"conv1d_2_noabs_16_topk0.2_lr1e-06",
-"conv1d_2_noabs_8_topk0.05_lr0.0001",
-"conv1d_2_noabs_8_topk0.05_lr1e-05",
-"conv1d_2_noabs_8_topk0.05_lr1e-06",
-"conv1d_2_noabs_8_topk0.1_lr0.0001",
-"conv1d_2_noabs_8_topk0.1_lr1e-05",
-"conv1d_2_noabs_8_topk0.1_lr1e-06",
-"conv1d_2_noabs_8_topk0.2_lr0.0001",
-"conv1d_2_noabs_8_topk0.2_lr1e-05",
-"conv1d_2_noabs_8_topk0.2_lr1e-06"]
+cwd = os.getcwd()
 
-if not os.path.exists('temp'):
-    os.makedirs('temp')
+model_folders = os.listdir(os.path.join(cwd, 'models'))
+model_folders = [folder for folder in model_folders if 'noabs' in folder]
+model_folders = [folder for folder in model_folders if '.csv' not in folder]
+
+if not os.path.exists('meme/temp'):
+    os.makedirs('meme/temp')
 
 for im,model_folder in enumerate(model_folders):
-    model_path = f"/home/anya/code/sae_borzoi/models/{model_folder}"
+    model_path = os.path.join(cwd, 'models', model_folder)
 
     slurm_string = '#!/bin/bash \n \n'
     slurm_string += '#SBATCH -p standard \n \n'
@@ -33,9 +20,10 @@ for im,model_folder in enumerate(model_folders):
     slurm_string += f"#SBATCH -o temp/job_{im}.out \n"
     slurm_string += f"#SBATCH -e temp/job_{im}.err \n"
     slurm_string += '#SBATCH --mem 22000 \n#SBATCH --time 2-0:0:0 \n'
-    slurm_string += f'source /home/anya/.bashrc; echo $HOSTNAME; bash /home/anya/code/sae_borzoi/meme/meme-analysis.sh /home/anya/code/sae_borzoi/models/{model_folder}'
+    bash_script = os.path.join(cwd, 'meme/meme-analysis.sh')
+    slurm_string += f"source /home/anya/.bashrc; echo $HOSTNAME; bash {bash_script} {model_path}"
 
-    with open(f'temp/job_{im}.sb', 'w') as f:
+    with open(os.path.join(cwd, f'meme/temp/job_{im}.sb'), 'w') as f:
         f.write(slurm_string)
 
     # run with subprocess
